@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SentryData Web IDE</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #f5f5f5; }
+        h1 { text-align: center; }
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 1rem;
+        }
+        .panel {
+            background: #fff;
+            border-radius: 8px;
+            padding: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: auto;
+        }
+        .panel h2 { margin-top: 0; font-size: 1rem; }
+        textarea {
+            width: 100%;
+            height: 260px;
+            resize: vertical;
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-family: monospace;
+        }
+        .top-left { grid-column: 1 / 2; grid-row: 1 / 2; }
+        .top-right { grid-column: 2 / 3; grid-row: 1 / 2; display: grid; gap: 0.5rem; }
+        .top-right .panel { max-height: 110px; }
+        .middle-left { grid-column: 1 / 2; grid-row: 2 / 3; }
+        .middle-right { grid-column: 2 / 3; grid-row: 2 / 3; display: grid; grid-template-rows: 1fr 1fr; gap: 0.5rem; }
+        .bottom { grid-column: 1 / 3; grid-row: 3 / 4; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { border-bottom: 1px solid #ddd; padding: 2px 4px; text-align: left; }
+        th { background: #f0f0f0; position: sticky; top: 0; }
+        .btn-run {
+            padding: 0.4rem 1rem;
+            border-radius: 4px;
+            border: none;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        .btn-run:hover { background: #1d4ed8; }
+        .badge-ok { color: #16a34a; font-weight: 600; }
+        .badge-error { color: #dc2626; font-weight: 600; }
+        .commands ul { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <h1>Pantallas del compilador SentryData</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="grid">
+            <!-- Prompt / instrucciones -->
+            <div class="panel top-left">
+                <h2>Prompt – Instrucciones del robot</h2>
+                <textarea name="code" placeholder="Escribe aquí tu código SentryData">{{ code }}</textarea>
+                <button type="submit" class="btn-run">Compilar y ejecutar</button>
+            </div>
+
+            <!-- Salidas de analizadores -->
+            <div class="top-right">
+                <div class="panel">
+                    <h2>Salida del analizador léxico</h2>
+                    {% if result %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th><th>Tipo</th><th>Valor</th><th>Línea</th><th>Col</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in result.tokens|slice:":40" %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ t.type }}</td>
+                                        <td>{{ t.value }}</td>
+                                        <td>{{ t.line }}</td>
+                                        <td>{{ t.column }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>Sin tokens todavía.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel">
+                    <h2>Salida del analizador sintáctico</h2>
+                    {% if result %}
+                        {% if result.syntax_ok %}
+                            <p class="badge-ok">✓ Estructura sintáctica válida</p>
+                        {% else %}
+                            <p class="badge-error">Errores sintácticos:</p>
+                            <ul>
+                                {% for e in result.syntax_errors %}
+                                    <li>L{{ e.line }} – {{ e.description }}</li>
+                                {% empty %}
+                                    <li>Sin detalles.</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% else %}
+                        <p>Ejecuta el compilador para ver resultados.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel">
+                    <h2>Salida del analizador semántico</h2>
+                    {% if result %}
+                        {% if result.semantic_ok %}
+                            <p class="badge-ok">✓ Análisis semántico correcto</p>
+                        {% else %}
+                            <p class="badge-error">Errores semánticos:</p>
+                            <ul>
+                                {% for e in result.semantic_errors %}
+                                    <li>L{{ e.line }} – {{ e.description }}</li>
+                                {% empty %}
+                                    <li>Sin detalles.</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% else %}
+                        <p>Ejecuta el compilador para ver resultados.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Espacio gráfico del robot (puedes usar datos CSV o log) -->
+            <div class="panel middle-left">
+                <h2>Espacio gráfico del Robot / Datos</h2>
+                {% if result and result.data_summary %}
+                    <p><strong>Archivo:</strong> {{ result.data_summary.file }}</p>
+                    <p><strong>Registros:</strong> {{ result.data_summary.records }}</p>
+                    <p><strong>Columnas:</strong> {{ result.data_summary.headers|join:", " }}</p>
+                {% elif result %}
+                    <p>No hay datos CSV cargados aún.</p>
+                {% else %}
+                    <p>Ejecuta un script con LOAD para ver datos.</p>
+                {% endif %}
+            </div>
+
+            <!-- Tabla de errores y comandos básicos -->
+            <div class="middle-right">
+                <div class="panel">
+                    <h2>Tabla de errores</h2>
+                    {% if result and result.all_errors %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Línea</th><th>Tipo</th><th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for e in result.all_errors %}
+                                    <tr>
+                                        <td>{{ e.line }}</td>
+                                        <td>{{ e.type }}</td>
+                                        <td>{{ e.description }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif result %}
+                        <p class="badge-ok">✓ Compilación sin errores</p>
+                    {% else %}
+                        <p>Sin errores todavía.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel commands">
+                    <h2>Comandos básicos</h2>
+                    <ul>
+                        <li><code>LOAD "archivo.csv"</code></li>
+                        <li><code>FILTER "edad" "&gt;" 30</code></li>
+                        <li><code>MODIFY "estado" "=" "ACTIVO"</code></li>
+                        <li><code>DELETE "campo"</code></li>
+                        <li><code>EXTRACT "columna"</code></li>
+                        <li><code>COUNT</code>, <code>SHOW</code>, <code>PRINT</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Parte inferior: log de ejecución, pila, bytecode -->
+            <div class="bottom">
+                <div class="panel">
+                    <h2>Log de ejecución de la VM</h2>
+                    {% if result and result.execution_log %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>PC</th><th>Instr</th><th>Acción</th><th>Pila</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for step in result.execution_log|slice:":40" %}
+                                    <tr>
+                                        <td>{{ step.pc }}</td>
+                                        <td>{{ step.instr }}</td>
+                                        <td>{{ step.action }}</td>
+                                        <td>{{ step.stack }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif result %}
+                        <p>No se ejecutó ninguna instrucción.</p>
+                    {% else %}
+                        <p>Compila para ver el log.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel">
+                    <h2>Pila final</h2>
+                    {% if result and result.stack %}
+                        <ul>
+                            {% for v in result.stack %}
+                                <li>{{ v }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% elif result %}
+                        <p>Pila vacía.</p>
+                    {% else %}
+                        <p>Sin ejecución todavía.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel">
+                    <h2>Bytecode optimizado</h2>
+                    {% if result and result.bytecode %}
+                        <ol>
+                            {% for instr in result.bytecode|slice:":40" %}
+                                <li><code>{{ instr }}</code></li>
+                            {% endfor %}
+                        </ol>
+                    {% elif result %}
+                        <p>No se generó bytecode.</p>
+                    {% else %}
+                        <p>Compila para ver el bytecode.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </form>
+</body>
+</html>
