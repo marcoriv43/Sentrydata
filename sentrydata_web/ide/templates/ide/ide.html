@@ -135,19 +135,87 @@
                 </div>
             </div>
 
-            <!-- Espacio gráfico del robot (puedes usar datos CSV o log) -->
-            <div class="panel middle-left">
-                <h2>Espacio gráfico del Robot / Datos</h2>
-                {% if result and result.data_summary %}
-                    <p><strong>Archivo:</strong> {{ result.data_summary.file }}</p>
-                    <p><strong>Registros:</strong> {{ result.data_summary.records }}</p>
-                    <p><strong>Columnas:</strong> {{ result.data_summary.headers|join:", " }}</p>
-                {% elif result %}
-                    <p>No hay datos CSV cargados aún.</p>
-                {% else %}
-                    <p>Ejecuta un script con LOAD para ver datos.</p>
-                {% endif %}
+            <!-- Panel de resultados -->
+<div class="panel middle-left">
+    <h2>📊 Resultados de ejecución</h2>
+    {% if result %}
+
+        <!-- Salidas PRINT -->
+        {% if result.print_outputs %}
+        <div style="margin-bottom:1rem;">
+            <strong style="color:#2563eb;">🖨️ Salidas PRINT:</strong>
+            {% for item in result.print_outputs %}
+            <div style="background:#f0f9ff; border-left:4px solid #2563eb; padding:6px 10px; margin:4px 0; font-family:monospace; border-radius:0 4px 4px 0;">
+                <span style="color:#64748b; font-size:0.8rem;">paso {{ item.line }} →</span>
+                <span style="font-size:1.2rem; font-weight:700; color:#1e40af;"> {{ item.value }}</span>
             </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Operaciones realizadas -->
+        {% if result.operations %}
+        <div style="margin-bottom:1rem;">
+            <strong style="color:#059669;">⚙️ Operaciones realizadas:</strong>
+            <table>
+                <thead><tr><th>Instrucción</th><th>Resultado</th></tr></thead>
+                <tbody>
+                    {% for op in result.operations %}
+                    <tr>
+                        <td><code>{{ op.instr }}</code></td>
+                        <td style="{% if 'ERROR' in op.action %}color:red;{% else %}color:green;{% endif %}">
+                            {{ op.action }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Datos CSV en memoria -->
+        {% if result.data_summary %}
+        <div>
+            <strong style="color:#7c3aed;">📁 Datos en memoria:</strong>
+            <span style="background:#7c3aed; color:white; border-radius:10px; padding:1px 8px; font-size:0.8rem; margin-left:6px;">
+                {{ result.data_summary.records }} registros
+            </span>
+            <p style="font-size:0.82rem; color:#64748b; margin:4px 0;">
+                Archivo: <strong>{{ result.data_summary.file }}</strong>
+                | Columnas: {{ result.data_summary.headers|join:", " }}
+            </p>
+            {% if result.data_records %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        {% for h in result.data_summary.headers %}<th>{{ h }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in result.data_records %}
+                    <tr>
+                        <td>{{ row.row_number }}</td>
+                        {% for h in result.data_summary.headers %}
+                        <td>{{ row.data|default_if_none:"-" }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if not result.print_outputs and not result.operations and not result.data_summary %}
+            <p>No hubo salidas visibles. Usa <code>PRINT</code>, <code>LOAD</code> o <code>FILTER</code>.</p>
+        {% endif %}
+
+    {% else %}
+        <p>Ejecuta un script para ver resultados aquí.</p>
+    {% endif %}
+</div>
+
 
             <!-- Tabla de errores y comandos básicos -->
             <div class="middle-right">
@@ -180,12 +248,13 @@
                 <div class="panel commands">
                     <h2>Comandos básicos</h2>
                     <ul>
-                        <li><code>LOAD "archivo.csv"</code></li>
-                        <li><code>FILTER "edad" "&gt;" 30</code></li>
-                        <li><code>MODIFY "estado" "=" "ACTIVO"</code></li>
-                        <li><code>DELETE "campo"</code></li>
-                        <li><code>EXTRACT "columna"</code></li>
-                        <li><code>COUNT</code>, <code>SHOW</code>, <code>PRINT</code></li>
+                        <li><code>datos.csv LOAD  // carga el archivo</code> </li>
+                        <li><code>edad > 30 FILTER    // filtra mayores de 30</code></li>
+                        <li><code>ciudad == Caracas FILTER  // solo los de Caracas</code></li>
+                        <li><code>COUNT  // cuenta cuántos quedaron</code></li>
+                        <li><code>PRINT // muestra el conteo</code></li>
+                        <li><code>resultado.csv SAVE  // guarda el resultado</code></li>
+                        <li><code>SHOW // muestra los registros</code>, <code>SHOW</code>, <code>PRINT</code></li>
                     </ul>
                 </div>
             </div>
