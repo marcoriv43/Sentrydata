@@ -1,0 +1,40 @@
+
+🔴 Errores Léxicos
+Código	Descripción	Causa
+Error 001	Carácter no reconocido: 'x'	Se encontró un símbolo que no pertenece al lenguaje (ej: @, #, $)
+Error 002	String sin cerrar	Se abrió una comilla doble " pero nunca se cerró en la misma línea
+
+🟠 Errores Sintácticos
+Código	Descripción	Causa
+Error 101	Operador 'x' requiere 2 operandos	Se usó +, -, >, ==, etc. con menos de 2 valores en la pila
+Error 102	Operador lógico 'AND/OR' requiere 2 operandos	Se usó AND u OR con menos de 2 booleanos en la pila
+Error 103	NOT requiere 1 operando	Se usó NOT con la pila vacía
+Error 104	DUP requiere al menos 1 elemento en la pila	Se usó DUP sin nada en la pila
+Error 105	DROP/PRINT requiere al menos 1 elemento en la pila	Se usó DROP o PRINT con la pila vacía
+Error 106	SWAP requiere al menos 2 elementos en la pila	Se usó SWAP con menos de 2 valores
+Error 107	IF requiere una condición en la pila	Se usó IF sin ningún valor booleano en la pila
+Error 108	THEN sin IF correspondiente	Se escribió THEN sin un IF previo abierto
+Error 109	THEN duplicado	Se escribió THEN dos veces dentro del mismo bloque IF
+Error 110	ELSE sin IF correspondiente	Se escribió ELSE sin un IF previo abierto
+Error 111	ELSE sin THEN previo	Se escribió ELSE antes de haber puesto THEN
+Error 112	ELSE duplicado	Se escribió ELSE dos veces en el mismo bloque IF
+Error 113	ENDIF sin IF correspondiente	Se cerró un bloque que nunca se abrió
+Error 114	Bloque IF sin THEN	Se abrió un IF pero nunca se escribió THEN
+Error 115	DELETE/EXTRACT requiere 1 parámetro en la pila	Se usó DELETE o EXTRACT sin el nombre del campo
+Error 116	Token inesperado 'x'	Se encontró un tipo de token que el analizador no esperaba
+Error 117	Bloque IF sin ENDIF de cierre	Se abrió un IF pero nunca se escribió ENDIF
+Error 118	Expresión vacía	El código enviado al compilador está completamente vacío
+Error 119	MODIFY requiere 3 parámetros (campo, operador, valor)	Se usó MODIFY con menos de 3 elementos en la pila
+Error 120	FILTER requiere 3 parámetros (campo, operador, valor)	Se usó FILTER con menos de 3 elementos en la pila
+Error 121	LOAD/SAVE requiere nombre de archivo	Se usó LOAD o SAVE sin un string de nombre de archivo en la pila
+
+🟡 Errores Semánticos
+Código	Descripción	Causa
+Error 201	Operador 'x' espera operandos numéricos, recibió 'tipo' y 'tipo'	Se usó +, -, <, >, etc. con valores de tipo STRING en vez de NUMBER
+
+🔵 Errores de Ejecución (VM)
+Código	Descripción	Causa
+Error 301	División por cero	El divisor en una operación / es 0
+—	Stack underflow en 'operador'	La VM intentó operar pero la pila tenía menos elementos de los necesarios
+—	Archivo no encontrado: 'nombre'	LOAD intentó abrir un CSV que no existe en el directorio
+—	Error al leer CSV	El archivo existe pero tiene un formato inválido o está corrupto

@@ -1,0 +1,61 @@
+Literales
+| Símbolo     | Tipo en tabla  | Ejemplo en código | Cómo se genera                                |
+| ----------- | -------------- | ----------------- | --------------------------------------------- |
+| "texto"     | LITERAL-CADENA | "Caracas"         | Comillas dobles en el léxico                  |
+| nombre      | LITERAL-CADENA | ciudad, edad      | Identificador sin comillas (STRING implícito) |
+| archivo.csv | LITERAL-CADENA | datos.csv         | Contiene punto, se trata como STRING          |
+| 42          | LITERAL-NÚMERO | 30, 2500, -5      | Dígitos, con o sin signo negativo             |
+| 3.14        | LITERAL-NÚMERO | 1500.0, 99.9      | Número con punto decimal                      |
+
+Keywords de Pila
+| Símbolo | Tipo en tabla | Qué hace                           |
+| ------- | ------------- | ---------------------------------- |
+| DUP     | KEYWORD-PILA  | Duplica el tope de la pila         |
+| DROP    | KEYWORD-PILA  | Descarta el tope de la pila        |
+| SWAP    | KEYWORD-PILA  | Intercambia los 2 topes de la pila |
+| PRINT   | KEYWORD-PILA  | Muestra el tope de la pila         |
+
+Keywords de Datos CSV
+| Símbolo | Tipo en tabla | Qué hace                                        |
+| ------- | ------------- | ----------------------------------------------- |
+| LOAD    | KEYWORD-DATOS | Carga un archivo CSV en memoria                 |
+| SAVE    | KEYWORD-DATOS | Guarda los datos en un archivo CSV              |
+| FILTER  | KEYWORD-DATOS | Filtra registros por condición                  |
+| MODIFY  | KEYWORD-DATOS | Modifica un campo en todos los registros        |
+| DELETE  | KEYWORD-DATOS | Elimina registros donde el campo es falso/vacío |
+| EXTRACT | KEYWORD-DATOS | Extrae todos los valores de una columna         |
+| COUNT   | KEYWORD-DATOS | Cuenta los registros en memoria                 |
+| SHOW    | KEYWORD-DATOS | Muestra los registros actuales en el log        |
+
+Keywords de Control de Flujo
+| Símbolo | Tipo en tabla   | Qué hace                                               |
+| ------- | --------------- | ------------------------------------------------------ |
+| IF      | KEYWORD-CONTROL | Inicia bloque condicional, consume booleano de la pila |
+| THEN    | KEYWORD-CONTROL | Marca el inicio del cuerpo verdadero                   |
+| ELSE    | KEYWORD-CONTROL | Marca el inicio del cuerpo falso                       |
+| ENDIF   | KEYWORD-CONTROL | Cierra el bloque condicional                           |
+
+Keywords Lógicos
+| Símbolo | Tipo en tabla  | Operación                        | Ejemplo          |
+| ------- | -------------- | -------------------------------- | ---------------- |
+| AND     | KEYWORD-LÓGICO | Conjunción: ambos deben ser True | 1 1 AND → True   |
+| OR      | KEYWORD-LÓGICO | Disyunción: al menos uno True    | 0 1 OR → True    |
+| NOT     | KEYWORD-LÓGICO | Negación: invierte el booleano   | NOT True → False |
+
+Operadores Aritméticos
+| Símbolo | Tipo en tabla | Operación      | Ejemplo      |
+| ------- | ------------- | -------------- | ------------ |
+| +       | OP-ARITMÉTICO | Suma           | 5 3 + → 8.0  |
+| -       | OP-ARITMÉTICO | Resta          | 10 4 - → 6.0 |
+| *       | OP-ARITMÉTICO | Multiplicación | 3 7 * → 21.0 |
+| /       | OP-ARITMÉTICO | División       | 20 4 / → 5.0 |
+
+Operadores de Comparación
+| Símbolo | Tipo en tabla  | Operación     | Contexto                                                |
+| ------- | -------------- | ------------- | ------------------------------------------------------- |
+| ==      | OP-COMPARACIÓN | Igual a       | Comparación directa → OP_EQ / antes de FILTER → STRING  |
+| !=      | OP-COMPARACIÓN | Distinto de   | Comparación directa → OP_NEQ / antes de FILTER → STRING |
+| <       | OP-COMPARACIÓN | Menor que     | Comparación directa → OP_LT / antes de FILTER → STRING  |
+| >       | OP-COMPARACIÓN | Mayor que     | Comparación directa → OP_GT / antes de FILTER → STRING  |
+| <=      | OP-COMPARACIÓN | Menor o igual | Comparación directa → OP_LTE / antes de FILTER → STRING |
+| >=      | OP-COMPARACIÓN | Mayor o igual | Comparación directa → OP_GTE / antes de FILTER → STRING |

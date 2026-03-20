@@ -1,5 +1,5 @@
+# sentrydata_compiler.py
 # Compilador SentryData - Versión Completa
-# Todas las fases del compilador implementadas
 
 from dataclasses import dataclass, field
 from typing import List, Any, Dict, Optional, Tuple
@@ -7,51 +7,40 @@ from enum import Enum
 import csv
 import os
 
-
 # ========== ENUMERACIONES ==========
 
 class OpCode(Enum):
-    """Códigos de operación del bytecode."""
-    # Pila
-    PUSH        = "PUSH"
-    POP         = "POP"
-    DUP         = "DUP"
-    DROP        = "DROP"
-    SWAP        = "SWAP"
-    # Aritméticas
-    ADD         = "ADD"
-    SUB         = "SUB"
-    MUL         = "MUL"
-    DIV         = "DIV"
-    # Comparaciones
-    EQ          = "EQ"
-    NEQ         = "NEQ"
-    LT          = "LT"
-    GT          = "GT"
-    LTE         = "LTE"
-    GTE         = "GTE"
-    # Lógicas
-    AND         = "AND"
-    OR          = "OR"
-    NOT         = "NOT"
-    # Control de flujo
-    JUMP        = "JUMP"
-    JUMP_FALSE  = "JUMP_FALSE"
-    LABEL       = "LABEL"
-    # I/O
-    PRINT       = "PRINT"
-    # Datos CSV
-    LOAD        = "LOAD"
-    SAVE        = "SAVE"
-    FILTER      = "FILTER"
-    DELETE      = "DELETE"
-    MODIFY      = "MODIFY"
-    EXTRACT     = "EXTRACT"
-    COUNT       = "COUNT"
-    SHOW        = "SHOW"
-    # Fin
-    HALT        = "HALT"
-
+    PUSH = "PUSH"
+    POP = "POP"
+    DUP = "DUP"
+    DROP = "DROP"
+    SWAP = "SWAP"
+    ADD = "ADD"
+    SUB = "SUB"
+    MUL = "MUL"
+    DIV = "DIV"
+    EQ = "EQ"
+    NEQ = "NEQ"
+    LT = "LT"
+    GT = "GT"
+    LTE = "LTE"
+    GTE = "GTE"
+    AND = "AND"
+    OR = "OR"
+    NOT = "NOT"
+    JUMP = "JUMP"
+    JUMP_FALSE = "JUMP_FALSE"
+    LABEL = "LABEL"
+    PRINT = "PRINT"
+    LOAD = "LOAD"
+    SAVE = "SAVE"
+    FILTER = "FILTER"
+    DELETE = "DELETE"
+    MODIFY = "MODIFY"
+    EXTRACT = "EXTRACT"
+    COUNT = "COUNT"
+    SHOW = "SHOW"
+    HALT = "HALT"
 
 # ========== ESTRUCTURAS DE DATOS ==========
 
@@ -153,7 +142,11 @@ class SentryDataCompiler:
                     i += 1; column += 1
                     continue
 
-                # NÚMEROS (incluyendo negativos: -5, -3.14)
+                # Ignorar comentarios // en medio de línea
+                if ch == '/' and i + 1 < len(line) and line[i+1] == '/':
+                    break
+
+                # NÚMEROS (incluyendo negativos)
                 if ch.isdigit() or (ch == '-' and i + 1 < len(line) and line[i+1].isdigit()):
                     start_col = column
                     num = ""
@@ -200,7 +193,7 @@ class SentryDataCompiler:
                     if upper in keywords:
                         self.tokens.append(Token("KEYWORD", upper, self.current_line, start_col))
                     else:
-                        # ← CAMBIO: todo lo que no es keyword se trata como STRING implícito
+                        # Identificadores sin comillas → STRING implícito
                         tok = Token("STRING", ident, self.current_line, start_col)
                         self.tokens.append(tok)
                         self._register_symbol(tok)
@@ -208,32 +201,24 @@ class SentryDataCompiler:
 
                 # OPERADORES (2 caracteres primero)
                 operators = {
-                    "==": "OP_EQ", "!=": "OP_NEQ", "<=": "OP_LTE", ">=": "OP_GTE",
-                    "+": "OP_ADD", "-": "OP_SUB", "*": "OP_MUL", "/": "OP_DIV",
-                    "<": "OP_LT", ">": "OP_GT"
+                    "==": "OP_EQ",  "!=": "OP_NEQ",
+                    "<=": "OP_LTE", ">=": "OP_GTE",
+                    "+":  "OP_ADD", "-":  "OP_SUB",
+                    "*":  "OP_MUL", "/":  "OP_DIV",
+                    "<":  "OP_LT",  ">":  "OP_GT"
                 }
-
-                # ← IGNORAR comentarios // en medio de línea
-                if ch == '/' and i + 1 < len(line) and line[i+1] == '/':
-                    break  # resto de la línea es comentario, saltar
-
                 if i + 1 < len(line):
                     two = line[i:i+2]
                     if two in operators:
-                        if operators[two] in ("OP_EQ", "OP_NEQ", "OP_LTE", "OP_GTE"):
-                            tok = Token("STRING", two, self.current_line, column)
-                            self.tokens.append(tok)
-                        else:
-                            self.tokens.append(Token(operators[two], two, self.current_line, column))
+                        self.tokens.append(Token("STRING", two, self.current_line, column))
                         i += 2; column += 2
                         continue
-
                 if ch in operators:
-                    if operators[ch] in ("OP_LT", "OP_GT"):
-                        tok = Token("STRING", ch, self.current_line, column)
-                        self.tokens.append(tok)
-                    else:
+                    if ch in ("+", "-", "*", "/"):
                         self.tokens.append(Token(operators[ch], ch, self.current_line, column))
+                    else:
+                        # < > sin par: guardar como STRING por ahora
+                        self.tokens.append(Token("STRING", ch, self.current_line, column))
                     i += 1; column += 1
                     continue
 
@@ -244,7 +229,39 @@ class SentryDataCompiler:
                 ))
                 i += 1; column += 1
 
+        # ← NUEVO: segundo pase para resolver contexto de operadores
+        self.tokens = self._fix_operator_context(self.tokens)
         return self.tokens
+
+    def _fix_operator_context(self, tokens: List[Token]) -> List[Token]:
+        """
+        Operadores de comparación como STRING:
+        - Si van seguidos de FILTER o MODIFY → se quedan como STRING (para la pila CSV)
+        - Si NO → se convierten en OP_GT, OP_LT, OP_EQ, etc. (para comparaciones directas)
+        """
+        op_map = {
+            ">":  "OP_GT",  "<":  "OP_LT",
+            ">=": "OP_GTE", "<=": "OP_LTE",
+            "==": "OP_EQ",  "!=": "OP_NEQ",
+        }
+        comparison_ops = set(op_map.keys())
+        result = []
+        for i, tok in enumerate(tokens):
+            if tok.type == "STRING" and tok.value in comparison_ops:
+                # Buscar el próximo KEYWORD después de este token
+                next_keyword = None
+                for j in range(i + 1, len(tokens)):
+                    if tokens[j].type == "KEYWORD":
+                        next_keyword = tokens[j].value.upper()
+                        break
+                if next_keyword in ("FILTER", "MODIFY"):
+                    result.append(tok)  # se queda como STRING para la pila
+                else:
+                    # Se convierte en operador real de comparación
+                    result.append(Token(op_map[tok.value], tok.value, tok.line, tok.column))
+            else:
+                result.append(tok)
+        return result
 
     # ========== FASE 2: ANÁLISIS SINTÁCTICO ==========
 
@@ -428,8 +445,8 @@ class SentryDataCompiler:
         binary_ops_map = {
             "OP_ADD": "NUMBER", "OP_SUB": "NUMBER",
             "OP_MUL": "NUMBER", "OP_DIV": "NUMBER",
-            "OP_EQ": "ANY", "OP_NEQ": "ANY",
-            "OP_LT": "NUMBER", "OP_GT": "NUMBER",
+            "OP_EQ": "ANY",     "OP_NEQ": "ANY",
+            "OP_LT": "NUMBER",  "OP_GT": "NUMBER",
             "OP_LTE": "NUMBER", "OP_GTE": "NUMBER",
         }
 
@@ -493,6 +510,8 @@ class SentryDataCompiler:
                     type_stack[-1], type_stack[-2] = type_stack[-2], type_stack[-1]; continue
                 if kw == "COUNT":
                     type_stack.append("NUMBER"); continue
+                if kw in ("PRINT", "SHOW"):
+                    continue
 
         return not has_errors
 
@@ -510,8 +529,8 @@ class SentryDataCompiler:
         token_to_opcode = {
             "OP_ADD": OpCode.ADD, "OP_SUB": OpCode.SUB,
             "OP_MUL": OpCode.MUL, "OP_DIV": OpCode.DIV,
-            "OP_EQ": OpCode.EQ, "OP_NEQ": OpCode.NEQ,
-            "OP_LT": OpCode.LT, "OP_GT": OpCode.GT,
+            "OP_EQ":  OpCode.EQ,  "OP_NEQ": OpCode.NEQ,
+            "OP_LT":  OpCode.LT,  "OP_GT":  OpCode.GT,
             "OP_LTE": OpCode.LTE, "OP_GTE": OpCode.GTE,
         }
 
@@ -542,7 +561,7 @@ class SentryDataCompiler:
 
                 if kw == "IF":
                     lbl_else = new_label()
-                    lbl_end = new_label()
+                    lbl_end  = new_label()
                     self.bytecode.append(Instruction(OpCode.JUMP_FALSE, lbl_else, token.line))
                     control_stack.append({"lbl_else": lbl_else, "lbl_end": lbl_end, "jump_end_idx": None})
                     continue
@@ -591,7 +610,7 @@ class SentryDataCompiler:
                 new_code.append(optimized[i]); i += 1
             optimized = new_code
 
-            # Optimización 2: Plegado de constantes
+            # Optimización 2: Plegado de constantes numéricas
             fold_ops = {
                 OpCode.ADD: lambda a, b: a + b,
                 OpCode.SUB: lambda a, b: a - b,
@@ -655,10 +674,10 @@ class SentryDataCompiler:
             action = self._execute_instruction(instr)
 
             self.execution_log.append({
-                "pc": pc,
-                "instr": str(instr),
+                "pc":     pc,
+                "instr":  str(instr),
                 "action": action,
-                "stack": list(self.stack),
+                "stack":  list(self.stack),
             })
 
             if instr.opcode == OpCode.JUMP:
@@ -681,9 +700,9 @@ class SentryDataCompiler:
             self.stack.append(instr.operand)
             return f"PUSH {instr.operand}"
 
-        if op == OpCode.ADD: return self._bin_op("+", lambda a, b: b + a)
-        if op == OpCode.SUB: return self._bin_op("-", lambda a, b: b - a)
-        if op == OpCode.MUL: return self._bin_op("*", lambda a, b: b * a)
+        if op == OpCode.ADD: return self._bin_op("+",  lambda a, b: b + a)
+        if op == OpCode.SUB: return self._bin_op("-",  lambda a, b: b - a)
+        if op == OpCode.MUL: return self._bin_op("*",  lambda a, b: b * a)
         if op == OpCode.DIV:
             if len(self.stack) >= 2 and self.stack[-1] == 0:
                 self.errors.append(CompilerError(instr.line, "EJECUCIÓN", "Error 301: División por cero"))
@@ -762,7 +781,7 @@ class SentryDataCompiler:
         self.stack.append(r)
         return f"{b} {name} {a} = {r}"
 
-    # ========== OPERACIONES CON CSV ==========
+    # ========== OPERACIONES CSV ==========
 
     def execute_load(self) -> str:
         if not self.stack:
@@ -811,13 +830,12 @@ class SentryDataCompiler:
     def execute_filter(self) -> str:
         if len(self.stack) < 3:
             return "ERROR: Stack underflow en FILTER"
-        value = self.stack.pop()
+        value    = self.stack.pop()
         operator = str(self.stack.pop())
-        field = str(self.stack.pop())
+        field    = str(self.stack.pop())
         if not self.loaded_data:
             return "ERROR: No hay datos cargados"
 
-        # ← CAMBIO: soporte para operadores con y sin comillas + aliases
         ops = {
             "==": lambda fv, v: fv == v,  "!=": lambda fv, v: fv != v,
             "<":  lambda fv, v: fv < v,   ">":  lambda fv, v: fv > v,
@@ -826,10 +844,9 @@ class SentryDataCompiler:
             "lt":  lambda fv, v: fv < v,  "gt":  lambda fv, v: fv > v,
             "lte": lambda fv, v: fv <= v, "gte": lambda fv, v: fv >= v,
         }
-        op_key = operator.lower()
-        if op_key not in ops and operator not in ops:
+        fn = ops.get(operator) or ops.get(operator.lower())
+        if not fn:
             return f"ERROR: Operador '{operator}' no reconocido"
-        fn = ops.get(operator) or ops.get(op_key)
 
         original = len(self.loaded_data)
         result = []
@@ -863,8 +880,8 @@ class SentryDataCompiler:
         if len(self.stack) < 3:
             return "ERROR: Stack underflow en MODIFY"
         new_value = self.stack.pop()
-        operator = str(self.stack.pop())
-        field = str(self.stack.pop())
+        operator  = str(self.stack.pop())
+        field     = str(self.stack.pop())
         if not self.loaded_data:
             return "ERROR: No hay datos cargados"
         count = 0
