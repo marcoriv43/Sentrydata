@@ -81,6 +81,8 @@
             margin: 0 0 0.3rem 0;
             letter-spacing: 0.05em;
         }
+
+        /* PRINT */
         .print-output {
             background: #eff6ff;
             border-left: 3px solid #2563eb;
@@ -92,6 +94,25 @@
         .print-value { color: #d97706; font-weight: 700; font-size: 1.1rem; }
         .print-label { color: #94a3b8; font-size: 0.8rem; }
 
+        /* ARITMÉTICA / LÓGICA */
+        .arith-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 4px 8px;
+            margin: 2px 0;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .arith-pc     { color: #94a3b8; font-size: 0.72rem; min-width: 32px; }
+        .arith-expr   { color: #1e293b; flex: 1; }
+        .arith-result { color: #16a34a; font-weight: 700; }
+        .arith-stack  { color: #64748b; font-size: 0.72rem; margin-left: auto; }
+
+        /* OPERACIONES DATOS */
         .csv-count {
             display: inline-block;
             background: #2563eb;
@@ -102,7 +123,20 @@
             font-weight: 600;
             margin-left: 6px;
         }
+        .op-item {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+            padding: 3px 0;
+            font-family: monospace;
+            font-size: 0.82rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .op-ins  { color: #1d4ed8; min-width: 160px; }
+        .op-act  { color: #1e293b; }
+        .op-act.error { color: #dc2626; }
 
+        /* PILA */
         .stack-item {
             display: flex;
             justify-content: space-between;
@@ -117,6 +151,7 @@
         .stack-item.tope { border-color: #2563eb; color: #2563eb; font-weight: 700; }
         .stack-label { font-size: 0.7rem; color: #94a3b8; }
 
+        /* ÁRBOL SEMÁNTICO */
         #sem-tree {
             font-family: monospace;
             font-size: 0.78rem;
@@ -129,19 +164,6 @@
             margin-top: 0.4rem;
             white-space: pre;
         }
-
-        .op-item {
-            display: flex;
-            gap: 0.5rem;
-            align-items: flex-start;
-            padding: 3px 0;
-            font-family: monospace;
-            font-size: 0.82rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .op-ins  { color: #1d4ed8; min-width: 160px; }
-        .op-act  { color: #1e293b; }
-        .op-act.error { color: #dc2626; }
 
         .commands ul { margin: 0; padding-left: 1.1rem; font-size: 0.82rem; line-height: 1.8; }
         .commands code {
@@ -248,6 +270,7 @@
                 <h2>📊 Resultados de ejecución</h2>
                 {% if result %}
 
+                    <!-- 1. SALIDAS PRINT -->
                     {% if result.print_outputs %}
                     <div class="result-section">
                         <h3>🖨️ Salidas PRINT</h3>
@@ -260,6 +283,21 @@
                     </div>
                     {% endif %}
 
+                    <!-- 2. OPERACIONES ARITMÉTICAS / LÓGICAS / PILA -->
+                    {% if result.arithmetic_results %}
+                    <div class="result-section">
+                        <h3>⚡ Operaciones aritméticas / lógicas</h3>
+                        {% for ar in result.arithmetic_results %}
+                        <div class="arith-item">
+                            <span class="arith-pc">pc{{ ar.pc }}</span>
+                            <span class="arith-expr">{{ ar.action }}</span>
+                            <span class="arith-stack">pila: {{ ar.stack }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- 3. OPERACIONES DE DATOS -->
                     {% if result.operations %}
                     <div class="result-section">
                         <h3>⚙️ Operaciones realizadas</h3>
@@ -274,7 +312,7 @@
                     </div>
                     {% endif %}
 
-                    <!-- Datos CSV/JSON en memoria -->
+                    <!-- 4. DATOS EN MEMORIA -->
                     {% if result.data_summary %}
                     <div class="result-section">
                         <h3>📁 Datos en memoria
@@ -309,8 +347,8 @@
                     </div>
                     {% endif %}
 
-                    {% if not result.print_outputs and not result.operations and not result.data_summary %}
-                        <p class="empty-msg">No hubo salidas visibles. Usa PRINT, LOAD o FILTER.</p>
+                    {% if not result.print_outputs and not result.arithmetic_results and not result.operations and not result.data_summary %}
+                        <p class="empty-msg">No hubo salidas visibles. Usa PRINT, operadores aritméticos, LOAD o FILTER.</p>
                     {% endif %}
 
                 {% else %}
@@ -355,6 +393,7 @@
                         <li><code>campo EXTRACT</code> – extraer columna</li>
                         <li><code>COUNT</code> – contar registros</li>
                         <li><code>SHOW</code> – mostrar datos</li>
+                        <li><code>5 3 +</code> – aritmética</li>
                         <li><code>PRINT</code> – imprimir tope pila</li>
                         <li><code>archivo.csv SAVE</code> – guardar</li>
                         <li><code>DUP DROP SWAP</code> – pila</li>
