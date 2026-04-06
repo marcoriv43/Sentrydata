@@ -1,0 +1,23 @@
+[
+  {
+    "nombre": "Luis",
+    "edad": 35,
+    "salario": 2800,
+    "activo": 1,
+    "bono": 1000
+  },
+  {
+    "nombre": "Marta",
+    "edad": 40,
+    "salario": 3200,
+    "activo": 0,
+    "bono": 1000
+  },
+  {
+    "nombre": "Sofia",
+    "edad": 45,
+    "salario": 3800,
+    "activo": 1,
+    "bono": 1000
+  }
+]
