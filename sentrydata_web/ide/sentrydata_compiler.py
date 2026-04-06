@@ -1,10 +1,11 @@
 # sentrydata_compiler.py
-# Compilador SentryData - Versión Completa
+# Compilador SentryData - Versión Completa con soporte CSV y JSON
 
 from dataclasses import dataclass, field
 from typing import List, Any, Dict, Optional
 from enum import Enum
 import csv
+import json
 import os
 
 # ========== ENUMERACIONES ==========
@@ -41,6 +42,13 @@ class OpCode(Enum):
     COUNT      = "COUNT"
     SHOW       = "SHOW"
     HALT       = "HALT"
+    # ── JSON ──
+    JLOAD      = "JLOAD"
+    JSAVE      = "JSAVE"
+    JGET       = "JGET"
+    JSET       = "JSET"
+    JDEL       = "JDEL"
+    JFILTER    = "JFILTER"
 
 # ========== ESTRUCTURAS DE DATOS ==========
 
@@ -107,6 +115,8 @@ class SentryDataCompiler:
             self.symbol_table[kw] = SymbolTableEntry(kw, "KEYWORD-PILA", None, 0)
         for kw in ["LOAD", "SAVE", "FILTER", "DELETE", "MODIFY", "EXTRACT", "COUNT", "SHOW"]:
             self.symbol_table[kw] = SymbolTableEntry(kw, "KEYWORD-DATOS", None, 0)
+        for kw in ["JLOAD", "JSAVE", "JGET", "JSET", "JDEL", "JFILTER"]:
+            self.symbol_table[kw] = SymbolTableEntry(kw, "KEYWORD-JSON", None, 0)
         for op in ["+", "-", "*", "/"]:
             self.symbol_table[op] = SymbolTableEntry(op, "OP-ARITMÉTICO", None, 0)
         for op in ["==", "!=", "<", ">", "<=", ">="]:
@@ -141,11 +151,10 @@ class SentryDataCompiler:
                     i += 1; column += 1
                     continue
 
-                # Ignorar comentarios // en medio de línea
                 if ch == '/' and i + 1 < len(line) and line[i+1] == '/':
                     break
 
-                # NÚMEROS (incluyendo negativos)
+                # NÚMEROS
                 if ch.isdigit() or (ch == '-' and i + 1 < len(line) and line[i+1].isdigit()):
                     start_col = column
                     num = ""
@@ -176,7 +185,7 @@ class SentryDataCompiler:
                         ))
                     continue
 
-                # IDENTIFICADORES / KEYWORDS / STRINGS implícitos
+                # IDENTIFICADORES / KEYWORDS
                 if ch.isalpha() or ch == "_":
                     start_col = column
                     ident = ""
@@ -186,7 +195,8 @@ class SentryDataCompiler:
                     keywords = {
                         "AND", "OR", "NOT", "IF", "THEN", "ELSE", "ENDIF",
                         "DELETE", "MODIFY", "EXTRACT", "FILTER", "LOAD", "SAVE",
-                        "DUP", "DROP", "SWAP", "PRINT", "COUNT", "SHOW"
+                        "DUP", "DROP", "SWAP", "PRINT", "COUNT", "SHOW",
+                        "JLOAD", "JSAVE", "JGET", "JSET", "JDEL", "JFILTER",
                     }
                     upper = ident.upper()
                     if upper in keywords:
@@ -229,11 +239,6 @@ class SentryDataCompiler:
         return self.tokens
 
     def _fix_operator_context(self, tokens: List[Token]) -> List[Token]:
-        """
-        Operadores de comparación como STRING:
-        - Si van seguidos de FILTER o MODIFY → se quedan como STRING
-        - Si NO → se convierten en OP_GT, OP_LT, OP_EQ, etc.
-        """
         op_map = {
             ">":  "OP_GT",  "<":  "OP_LT",
             ">=": "OP_GTE", "<=": "OP_LTE",
@@ -248,7 +253,7 @@ class SentryDataCompiler:
                     if tokens[j].type == "KEYWORD":
                         next_keyword = tokens[j].value.upper()
                         break
-                if next_keyword in ("FILTER", "MODIFY"):
+                if next_keyword in ("FILTER", "MODIFY", "JFILTER"):
                     result.append(tok)
                 else:
                     result.append(Token(op_map[tok.value], tok.value, tok.line, tok.column))
@@ -416,6 +421,39 @@ class SentryDataCompiler:
                     depth += 1
                     continue
 
+                # ── JSON ──────────────────────────────────────────
+                if kw in {"JLOAD", "JSAVE"}:
+                    if depth < 1:
+                        self.errors.append(CompilerError(token.line, "SINTÁCTICO",
+                            f"Error 122: {kw} requiere nombre de archivo"))
+                        has_errors = True
+                    continue
+
+                if kw in {"JGET", "JDEL"}:
+                    if depth < 1:
+                        self.errors.append(CompilerError(token.line, "SINTÁCTICO",
+                            f"Error 123: {kw} requiere 1 parámetro (clave)"))
+                        has_errors = True
+                    continue
+
+                if kw == "JSET":
+                    if depth < 2:
+                        self.errors.append(CompilerError(token.line, "SINTÁCTICO",
+                            "Error 124: JSET requiere 2 parámetros (clave, valor)"))
+                        has_errors = True
+                    else:
+                        depth -= 1
+                    continue
+
+                if kw == "JFILTER":
+                    if depth < 3:
+                        self.errors.append(CompilerError(token.line, "SINTÁCTICO",
+                            "Error 125: JFILTER requiere 3 parámetros (clave, operador, valor)"))
+                        has_errors = True
+                    else:
+                        depth -= 2
+                    continue
+
                 continue
 
             self.errors.append(CompilerError(token.line, "SINTÁCTICO",
@@ -479,18 +517,27 @@ class SentryDataCompiler:
                         type_stack[-1] = "BOOLEAN"
                     continue
 
-                if kw == "LOAD":
+                if kw in ("LOAD", "JLOAD"):
                     if type_stack: type_stack.pop()
                     type_stack.append("NUMBER")
                     continue
 
-                if kw == "SAVE":
+                if kw in ("SAVE", "JSAVE"):
                     if type_stack: type_stack.pop()
                     continue
 
-                if kw in ("FILTER", "MODIFY"):
+                if kw in ("FILTER", "MODIFY", "JFILTER"):
                     if len(type_stack) >= 3:
                         type_stack.pop(); type_stack.pop(); type_stack.pop()
+                    continue
+
+                if kw == "JSET":
+                    if len(type_stack) >= 2:
+                        type_stack.pop(); type_stack.pop()
+                    continue
+
+                if kw in ("JGET", "JDEL"):
+                    if type_stack: type_stack.pop()
                     continue
 
                 if kw == "DUP" and type_stack:
@@ -534,6 +581,10 @@ class SentryDataCompiler:
             "DELETE":  OpCode.DELETE,  "MODIFY":  OpCode.MODIFY,
             "EXTRACT": OpCode.EXTRACT, "COUNT":   OpCode.COUNT,
             "SHOW":    OpCode.SHOW,
+            # ── JSON ──
+            "JLOAD":   OpCode.JLOAD,   "JSAVE":   OpCode.JSAVE,
+            "JGET":    OpCode.JGET,    "JSET":    OpCode.JSET,
+            "JDEL":    OpCode.JDEL,    "JFILTER": OpCode.JFILTER,
         }
 
         for token in tokens:
@@ -697,21 +748,21 @@ class SentryDataCompiler:
             self.stack.append(instr.operand)
             return f"PUSH {instr.operand}"
 
-        if op == OpCode.ADD: return self._bin_op("+",   lambda a, b: b + a)
-        if op == OpCode.SUB: return self._bin_op("-",   lambda a, b: b - a)
-        if op == OpCode.MUL: return self._bin_op("*",   lambda a, b: b * a)
+        if op == OpCode.ADD: return self._bin_op("+",  lambda a, b: b + a)
+        if op == OpCode.SUB: return self._bin_op("-",  lambda a, b: b - a)
+        if op == OpCode.MUL: return self._bin_op("*",  lambda a, b: b * a)
         if op == OpCode.DIV:
             if len(self.stack) >= 2 and self.stack[-1] == 0:
                 self.errors.append(CompilerError(instr.line, "EJECUCIÓN", "Error 301: División por cero"))
                 return "ERROR: División por cero"
             return self._bin_op("/", lambda a, b: b / a)
 
-        if op == OpCode.EQ:  return self._bin_op("==",  lambda a, b: b == a)
-        if op == OpCode.NEQ: return self._bin_op("!=",  lambda a, b: b != a)
-        if op == OpCode.LT:  return self._bin_op("<",   lambda a, b: b < a)
-        if op == OpCode.GT:  return self._bin_op(">",   lambda a, b: b > a)
-        if op == OpCode.LTE: return self._bin_op("<=",  lambda a, b: b <= a)
-        if op == OpCode.GTE: return self._bin_op(">=",  lambda a, b: b >= a)
+        if op == OpCode.EQ:  return self._bin_op("==", lambda a, b: b == a)
+        if op == OpCode.NEQ: return self._bin_op("!=", lambda a, b: b != a)
+        if op == OpCode.LT:  return self._bin_op("<",  lambda a, b: b <  a)
+        if op == OpCode.GT:  return self._bin_op(">",  lambda a, b: b >  a)
+        if op == OpCode.LTE: return self._bin_op("<=", lambda a, b: b <= a)
+        if op == OpCode.GTE: return self._bin_op(">=", lambda a, b: b >= a)
 
         if op == OpCode.AND: return self._bin_op("AND", lambda a, b: bool(b) and bool(a))
         if op == OpCode.OR:  return self._bin_op("OR",  lambda a, b: bool(b) or  bool(a))
@@ -762,6 +813,14 @@ class SentryDataCompiler:
 
         if op == OpCode.SHOW:
             return self.execute_show()
+
+        # ── JSON ──
+        if op == OpCode.JLOAD:   return self.execute_jload()
+        if op == OpCode.JSAVE:   return self.execute_jsave()
+        if op == OpCode.JGET:    return self.execute_jget()
+        if op == OpCode.JSET:    return self.execute_jset()
+        if op == OpCode.JDEL:    return self.execute_jdel()
+        if op == OpCode.JFILTER: return self.execute_jfilter()
 
         if op in (OpCode.JUMP, OpCode.JUMP_FALSE):
             return f"{op.value} → {instr.operand}"
@@ -833,25 +892,14 @@ class SentryDataCompiler:
         field    = str(self.stack.pop())
         if not self.loaded_data:
             return "ERROR: No hay datos cargados"
-
         ops = {
-            "==":  lambda fv, v: fv == v,
-            "!=":  lambda fv, v: fv != v,
-            "<":   lambda fv, v: fv <  v,
-            ">":   lambda fv, v: fv >  v,
-            "<=":  lambda fv, v: fv <= v,
-            ">=":  lambda fv, v: fv >= v,
-            "eq":  lambda fv, v: fv == v,
-            "neq": lambda fv, v: fv != v,
-            "lt":  lambda fv, v: fv <  v,
-            "gt":  lambda fv, v: fv >  v,
-            "lte": lambda fv, v: fv <= v,
-            "gte": lambda fv, v: fv >= v,
+            "==":  lambda fv, v: fv == v, "!=":  lambda fv, v: fv != v,
+            "<":   lambda fv, v: fv <  v, ">":   lambda fv, v: fv >  v,
+            "<=":  lambda fv, v: fv <= v, ">=":  lambda fv, v: fv >= v,
         }
         fn = ops.get(operator) or ops.get(operator.lower())
         if not fn:
             return f"ERROR: Operador '{operator}' no reconocido"
-
         original = len(self.loaded_data)
         result = []
         for rec in self.loaded_data:
@@ -912,6 +960,155 @@ class SentryDataCompiler:
             return "SHOW: No hay datos cargados"
         return f"SHOW {len(self.loaded_data)} registros"
 
+    # ========== OPERACIONES JSON ==========
+
+    def execute_jload(self) -> str:
+        if not self.stack:
+            return "ERROR: Stack underflow en JLOAD"
+        filename = str(self.stack.pop())
+        if not os.path.exists(filename):
+            self.errors.append(CompilerError(self.current_line, "EJECUCIÓN",
+                f"Archivo no encontrado: '{filename}'"))
+            return f"ERROR: '{filename}' no encontrado"
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            if isinstance(data, list):
+                records = data
+            elif isinstance(data, dict):
+                records = next((v for v in data.values() if isinstance(v, list)), [data])
+            else:
+                return "ERROR: El JSON debe ser un array de objetos"
+
+            if not records:
+                return "ERROR: El JSON está vacío"
+
+            self.current_headers = list(records[0].keys()) if records else []
+            self.loaded_data = []
+            for idx, obj in enumerate(records, start=1):
+                processed = {}
+                for k, v in obj.items():
+                    try:
+                        processed[k] = float(v) if isinstance(v, str) else v
+                    except (ValueError, TypeError):
+                        processed[k] = v
+                self.loaded_data.append(DataRecord(processed, idx))
+
+            self.current_file = filename
+            self.stack.append(len(self.loaded_data))
+            return f"JLOAD '{filename}' → {len(self.loaded_data)} registros"
+        except Exception as e:
+            self.errors.append(CompilerError(self.current_line, "EJECUCIÓN",
+                f"Error al leer JSON: {e}"))
+            return f"ERROR: {e}"
+
+    def execute_jsave(self) -> str:
+    if not self.stack:
+        return "ERROR: Stack underflow en JSAVE"
+    filename = str(self.stack.pop())
+    if not self.loaded_data:
+        return "ERROR: No hay datos para guardar"
+    try:
+        # Reconstruir lista de objetos respetando el orden de headers
+        records = []
+        for rec in self.loaded_data:
+            obj = {}
+            # Primero las claves conocidas en orden
+            for h in self.current_headers:
+                if h in rec.data:
+                    val = rec.data[h]
+                    # Convertir float a int si es entero (ej: 1.0 → 1)
+                    if isinstance(val, float) and val.is_integer():
+                        val = int(val)
+                    obj[h] = val
+            # Luego cualquier clave extra que no esté en headers
+            for k, v in rec.data.items():
+                if k not in obj:
+                    if isinstance(v, float) and v.is_integer():
+                        v = int(v)
+                    obj[k] = v
+            records.append(obj)
+
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(records, f, ensure_ascii=False, indent=2)
+
+        return f"JSAVE '{filename}' → {len(self.loaded_data)} registros guardados"
+    except Exception as e:
+        return f"ERROR: {e}"
+
+    def execute_jget(self) -> str:
+        if not self.stack:
+            return "ERROR: Stack underflow en JGET"
+        key = str(self.stack.pop())
+        if not self.loaded_data:
+            return "ERROR: No hay datos cargados"
+        values = [rec.data.get(key) for rec in self.loaded_data if key in rec.data]
+        self.stack.append(values)
+        return f"JGET '{key}' → {len(values)} valores extraídos"
+
+    def execute_jset(self) -> str:
+        if len(self.stack) < 2:
+            return "ERROR: Stack underflow en JSET"
+        new_value = self.stack.pop()
+        key       = str(self.stack.pop())
+        if not self.loaded_data:
+            return "ERROR: No hay datos cargados"
+        count = 0
+        for rec in self.loaded_data:
+            rec.data[key] = new_value
+            count += 1
+        if key not in self.current_headers:
+            self.current_headers.append(key)
+        return f"JSET '{key}' = {new_value} → {count} registros modificados"
+
+    def execute_jdel(self) -> str:
+        if not self.stack:
+            return "ERROR: Stack underflow en JDEL"
+        key = str(self.stack.pop())
+        if not self.loaded_data:
+            return "ERROR: No hay datos cargados"
+        count = 0
+        for rec in self.loaded_data:
+            if key in rec.data:
+                del rec.data[key]
+                count += 1
+        if key in self.current_headers:
+            self.current_headers.remove(key)
+        return f"JDEL '{key}' → clave eliminada de {count} registros"
+
+    def execute_jfilter(self) -> str:
+        if len(self.stack) < 3:
+            return "ERROR: Stack underflow en JFILTER"
+        value    = self.stack.pop()
+        operator = str(self.stack.pop())
+        key      = str(self.stack.pop())
+        if not self.loaded_data:
+            return "ERROR: No hay datos cargados"
+        ops = {
+            "==":  lambda fv, v: fv == v, "!=":  lambda fv, v: fv != v,
+            "<":   lambda fv, v: fv <  v, ">":   lambda fv, v: fv >  v,
+            "<=":  lambda fv, v: fv <= v, ">=":  lambda fv, v: fv >= v,
+        }
+        fn = ops.get(operator)
+        if not fn:
+            return f"ERROR: Operador '{operator}' no reconocido"
+        original = len(self.loaded_data)
+        result = []
+        for rec in self.loaded_data:
+            if key not in rec.data:
+                continue
+            fv = rec.data[key]
+            try:
+                if isinstance(value, (int, float)):
+                    fv = float(fv) if not isinstance(fv, (int, float)) else fv
+                if fn(fv, value):
+                    result.append(rec)
+            except Exception:
+                continue
+        self.loaded_data = result
+        return f"JFILTER {key} {operator} {value} → {original} → {len(result)} registros"
+
     # ========== ÁRBOL SEMÁNTICO ==========
 
     def build_semantic_tree(self, tokens: List[Token]) -> dict:
@@ -927,12 +1124,7 @@ class SentryDataCompiler:
         }
 
         def make_node(label, ntype, dtype, children=None):
-            return {
-                "label":    label,
-                "type":     ntype,
-                "dtype":    dtype,
-                "children": children or []
-            }
+            return {"label": label, "type": ntype, "dtype": dtype, "children": children or []}
 
         for tok in tokens:
             t = tok.type
@@ -940,7 +1132,6 @@ class SentryDataCompiler:
             if t == "NUMBER":
                 stack.append(make_node(str(tok.value), "NÚMERO", "NUMBER"))
                 continue
-
             if t == "STRING":
                 stack.append(make_node(f'"{tok.value}"', "CADENA", "STRING"))
                 continue
@@ -960,82 +1151,96 @@ class SentryDataCompiler:
                     left  = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     stack.append(make_node(kw, "OP-LÓGICO", "BOOLEAN", [left, right]))
                     continue
-
                 if kw == "NOT":
                     child = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     stack.append(make_node("NOT", "OP-LÓGICO", "BOOLEAN", [child]))
                     continue
-
                 if kw == "DUP":
                     child = stack[-1] if stack else make_node("?", "VACÍO", "ANY")
                     stack.append(make_node("DUP", "OP-PILA", child.get("dtype","ANY"), [child]))
                     continue
-
                 if kw == "DROP":
                     child = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("DROP", "OP-PILA", "VOID", [child]))
                     continue
-
                 if kw == "SWAP":
                     b = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     a = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("SWAP", "OP-PILA", "VOID", [a, b]))
                     continue
-
                 if kw == "PRINT":
                     child = stack[-1] if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("PRINT", "SALIDA", "VOID", [child]))
                     continue
-
                 if kw == "LOAD":
                     fname = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("LOAD", "OP-DATOS", "NUMBER", [fname]))
                     continue
-
                 if kw == "SAVE":
                     fname = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("SAVE", "OP-DATOS", "VOID", [fname]))
                     continue
-
                 if kw == "FILTER":
                     val   = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     op    = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("FILTER", "OP-DATOS", "VOID", [field, op, val]))
                     continue
-
                 if kw == "MODIFY":
                     val   = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     op    = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("MODIFY", "OP-DATOS", "VOID", [field, op, val]))
                     continue
-
                 if kw == "DELETE":
                     field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("DELETE", "OP-DATOS", "VOID", [field]))
                     continue
-
                 if kw == "EXTRACT":
                     field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("EXTRACT", "OP-DATOS", "VOID", [field]))
                     continue
-
                 if kw == "COUNT":
                     root["children"].append(make_node("COUNT", "OP-DATOS", "NUMBER"))
                     continue
-
                 if kw == "SHOW":
                     root["children"].append(make_node("SHOW", "OP-DATOS", "VOID"))
                     continue
-
                 if kw == "IF":
                     cond = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
                     root["children"].append(make_node("IF", "CONTROL", "VOID", [cond]))
                     continue
-
                 if kw in ("THEN", "ELSE", "ENDIF"):
                     root["children"].append(make_node(kw, "CONTROL", "VOID"))
+                    continue
+
+                # ── JSON en árbol ──
+                if kw == "JLOAD":
+                    fname = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("JLOAD", "OP-JSON", "NUMBER", [fname]))
+                    continue
+                if kw == "JSAVE":
+                    fname = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("JSAVE", "OP-JSON", "VOID", [fname]))
+                    continue
+                if kw == "JFILTER":
+                    val   = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    op    = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("JFILTER", "OP-JSON", "VOID", [field, op, val]))
+                    continue
+                if kw == "JSET":
+                    val  = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    key  = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("JSET", "OP-JSON", "VOID", [key, val]))
+                    continue
+                if kw == "JGET":
+                    key = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("JGET", "OP-JSON", "STRING", [key]))
+                    continue
+                if kw == "JDEL":
+                    key = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("JDEL", "OP-JSON", "VOID", [key]))
                     continue
 
         for leftover in stack:
