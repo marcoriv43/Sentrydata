@@ -9,7 +9,7 @@ def run_in_memory(code: str) -> dict:
         "syntax_errors": [],
         "semantic_ok": False,
         "semantic_errors": [],
-        "semantic_tree": None,      # ← NUEVO
+        "semantic_tree": None,
         "bytecode": [],
         "execution_log": [],
         "stack": [],
@@ -49,7 +49,6 @@ def run_in_memory(code: str) -> dict:
         e for e in compiler.errors if e.type == "SEMÁNTICO"
     ]
 
-    # ← NUEVO: árbol semántico
     result["semantic_tree"] = compiler.build_semantic_tree(tokens)
 
     # ── FASE 4-5: BYTECODE + OPTIMIZACIÓN ───────────────────────
@@ -86,14 +85,18 @@ def run_in_memory(code: str) -> dict:
                 "action": step["action"]
             })
 
-    # ── DATOS CSV EN MEMORIA ─────────────────────────────────────
+    # ── DATOS CSV/JSON EN MEMORIA ────────────────────────────────
     if compiler.loaded_data:
         result["data_summary"] = {
             "file":    compiler.current_file,
             "records": len(compiler.loaded_data),
             "headers": compiler.current_headers,
         }
-        result["data_records"] = compiler.loaded_data[:10]
+        # Serializar como lista de dicts simples para el template
+        result["data_records"] = [
+            {"row_number": rec.row_number, "data": rec.data}
+            for rec in compiler.loaded_data[:10]
+        ]
 
     # ── TODOS LOS ERRORES ────────────────────────────────────────
     result["all_errors"] = compiler.get_errors()
