@@ -2,7 +2,7 @@
 # Compilador SentryData - Versión Completa
 
 from dataclasses import dataclass, field
-from typing import List, Any, Dict, Optional, Tuple
+from typing import List, Any, Dict, Optional
 from enum import Enum
 import csv
 import os
@@ -10,37 +10,37 @@ import os
 # ========== ENUMERACIONES ==========
 
 class OpCode(Enum):
-    PUSH = "PUSH"
-    POP = "POP"
-    DUP = "DUP"
-    DROP = "DROP"
-    SWAP = "SWAP"
-    ADD = "ADD"
-    SUB = "SUB"
-    MUL = "MUL"
-    DIV = "DIV"
-    EQ = "EQ"
-    NEQ = "NEQ"
-    LT = "LT"
-    GT = "GT"
-    LTE = "LTE"
-    GTE = "GTE"
-    AND = "AND"
-    OR = "OR"
-    NOT = "NOT"
-    JUMP = "JUMP"
+    PUSH       = "PUSH"
+    POP        = "POP"
+    DUP        = "DUP"
+    DROP       = "DROP"
+    SWAP       = "SWAP"
+    ADD        = "ADD"
+    SUB        = "SUB"
+    MUL        = "MUL"
+    DIV        = "DIV"
+    EQ         = "EQ"
+    NEQ        = "NEQ"
+    LT         = "LT"
+    GT         = "GT"
+    LTE        = "LTE"
+    GTE        = "GTE"
+    AND        = "AND"
+    OR         = "OR"
+    NOT        = "NOT"
+    JUMP       = "JUMP"
     JUMP_FALSE = "JUMP_FALSE"
-    LABEL = "LABEL"
-    PRINT = "PRINT"
-    LOAD = "LOAD"
-    SAVE = "SAVE"
-    FILTER = "FILTER"
-    DELETE = "DELETE"
-    MODIFY = "MODIFY"
-    EXTRACT = "EXTRACT"
-    COUNT = "COUNT"
-    SHOW = "SHOW"
-    HALT = "HALT"
+    LABEL      = "LABEL"
+    PRINT      = "PRINT"
+    LOAD       = "LOAD"
+    SAVE       = "SAVE"
+    FILTER     = "FILTER"
+    DELETE     = "DELETE"
+    MODIFY     = "MODIFY"
+    EXTRACT    = "EXTRACT"
+    COUNT      = "COUNT"
+    SHOW       = "SHOW"
+    HALT       = "HALT"
 
 # ========== ESTRUCTURAS DE DATOS ==========
 
@@ -137,7 +137,6 @@ class SentryDataCompiler:
             while i < len(line):
                 ch = line[i]
 
-                # Espacios
                 if ch.isspace():
                     i += 1; column += 1
                     continue
@@ -193,13 +192,12 @@ class SentryDataCompiler:
                     if upper in keywords:
                         self.tokens.append(Token("KEYWORD", upper, self.current_line, start_col))
                     else:
-                        # Identificadores sin comillas → STRING implícito
                         tok = Token("STRING", ident, self.current_line, start_col)
                         self.tokens.append(tok)
                         self._register_symbol(tok)
                     continue
 
-                # OPERADORES (2 caracteres primero)
+                # OPERADORES
                 operators = {
                     "==": "OP_EQ",  "!=": "OP_NEQ",
                     "<=": "OP_LTE", ">=": "OP_GTE",
@@ -217,27 +215,24 @@ class SentryDataCompiler:
                     if ch in ("+", "-", "*", "/"):
                         self.tokens.append(Token(operators[ch], ch, self.current_line, column))
                     else:
-                        # < > sin par: guardar como STRING por ahora
                         self.tokens.append(Token("STRING", ch, self.current_line, column))
                     i += 1; column += 1
                     continue
 
-                # CARÁCTER NO RECONOCIDO
                 self.errors.append(CompilerError(
                     self.current_line, "LÉXICO",
                     f"Error 001: Carácter no reconocido: '{ch}'"
                 ))
                 i += 1; column += 1
 
-        # ← NUEVO: segundo pase para resolver contexto de operadores
         self.tokens = self._fix_operator_context(self.tokens)
         return self.tokens
 
     def _fix_operator_context(self, tokens: List[Token]) -> List[Token]:
         """
         Operadores de comparación como STRING:
-        - Si van seguidos de FILTER o MODIFY → se quedan como STRING (para la pila CSV)
-        - Si NO → se convierten en OP_GT, OP_LT, OP_EQ, etc. (para comparaciones directas)
+        - Si van seguidos de FILTER o MODIFY → se quedan como STRING
+        - Si NO → se convierten en OP_GT, OP_LT, OP_EQ, etc.
         """
         op_map = {
             ">":  "OP_GT",  "<":  "OP_LT",
@@ -248,16 +243,14 @@ class SentryDataCompiler:
         result = []
         for i, tok in enumerate(tokens):
             if tok.type == "STRING" and tok.value in comparison_ops:
-                # Buscar el próximo KEYWORD después de este token
                 next_keyword = None
                 for j in range(i + 1, len(tokens)):
                     if tokens[j].type == "KEYWORD":
                         next_keyword = tokens[j].value.upper()
                         break
                 if next_keyword in ("FILTER", "MODIFY"):
-                    result.append(tok)  # se queda como STRING para la pila
+                    result.append(tok)
                 else:
-                    # Se convierte en operador real de comparación
                     result.append(Token(op_map[tok.value], tok.value, tok.line, tok.column))
             else:
                 result.append(tok)
@@ -445,8 +438,8 @@ class SentryDataCompiler:
         binary_ops_map = {
             "OP_ADD": "NUMBER", "OP_SUB": "NUMBER",
             "OP_MUL": "NUMBER", "OP_DIV": "NUMBER",
-            "OP_EQ": "ANY",     "OP_NEQ": "ANY",
-            "OP_LT": "NUMBER",  "OP_GT": "NUMBER",
+            "OP_EQ":  "ANY",    "OP_NEQ": "ANY",
+            "OP_LT":  "NUMBER", "OP_GT":  "NUMBER",
             "OP_LTE": "NUMBER", "OP_GTE": "NUMBER",
         }
 
@@ -462,7 +455,7 @@ class SentryDataCompiler:
                 expected = binary_ops_map[t]
                 if len(type_stack) >= 2:
                     right = type_stack.pop()
-                    left = type_stack.pop()
+                    left  = type_stack.pop()
                     if expected == "NUMBER":
                         if left not in ("NUMBER", "ANY") or right not in ("NUMBER", "ANY"):
                             self.errors.append(CompilerError(token.line, "SEMÁNTICO",
@@ -487,14 +480,12 @@ class SentryDataCompiler:
                     continue
 
                 if kw == "LOAD":
-                    if type_stack:
-                        type_stack.pop()
+                    if type_stack: type_stack.pop()
                     type_stack.append("NUMBER")
                     continue
 
                 if kw == "SAVE":
-                    if type_stack:
-                        type_stack.pop()
+                    if type_stack: type_stack.pop()
                     continue
 
                 if kw in ("FILTER", "MODIFY"):
@@ -535,14 +526,14 @@ class SentryDataCompiler:
         }
 
         keyword_to_opcode = {
-            "AND": OpCode.AND, "OR": OpCode.OR,
-            "NOT": OpCode.NOT, "DUP": OpCode.DUP,
-            "DROP": OpCode.DROP, "SWAP": OpCode.SWAP,
-            "PRINT": OpCode.PRINT, "LOAD": OpCode.LOAD,
-            "SAVE": OpCode.SAVE, "FILTER": OpCode.FILTER,
-            "DELETE": OpCode.DELETE, "MODIFY": OpCode.MODIFY,
-            "EXTRACT": OpCode.EXTRACT, "COUNT": OpCode.COUNT,
-            "SHOW": OpCode.SHOW,
+            "AND":     OpCode.AND,     "OR":      OpCode.OR,
+            "NOT":     OpCode.NOT,     "DUP":     OpCode.DUP,
+            "DROP":    OpCode.DROP,    "SWAP":    OpCode.SWAP,
+            "PRINT":   OpCode.PRINT,   "LOAD":    OpCode.LOAD,
+            "SAVE":    OpCode.SAVE,    "FILTER":  OpCode.FILTER,
+            "DELETE":  OpCode.DELETE,  "MODIFY":  OpCode.MODIFY,
+            "EXTRACT": OpCode.EXTRACT, "COUNT":   OpCode.COUNT,
+            "SHOW":    OpCode.SHOW,
         }
 
         for token in tokens:
@@ -563,7 +554,11 @@ class SentryDataCompiler:
                     lbl_else = new_label()
                     lbl_end  = new_label()
                     self.bytecode.append(Instruction(OpCode.JUMP_FALSE, lbl_else, token.line))
-                    control_stack.append({"lbl_else": lbl_else, "lbl_end": lbl_end, "jump_end_idx": None})
+                    control_stack.append({
+                        "lbl_else": lbl_else,
+                        "lbl_end":  lbl_end,
+                        "jump_end_idx": None
+                    })
                     continue
 
                 if kw == "THEN":
@@ -572,7 +567,7 @@ class SentryDataCompiler:
                 if kw == "ELSE":
                     top = control_stack[-1]
                     top["jump_end_idx"] = len(self.bytecode)
-                    self.bytecode.append(Instruction(OpCode.JUMP, top["lbl_end"], token.line))
+                    self.bytecode.append(Instruction(OpCode.JUMP,  top["lbl_end"],  token.line))
                     self.bytecode.append(Instruction(OpCode.LABEL, top["lbl_else"], token.line))
                     continue
 
@@ -630,9 +625,9 @@ class SentryDataCompiler:
                         optimized[i+2].opcode in fold_ops):
                     a = instr.operand
                     b = optimized[i+1].operand
-                    result = fold_ops[optimized[i+2].opcode](a, b)
-                    if result is not None:
-                        new_code.append(Instruction(OpCode.PUSH, result, instr.line))
+                    res = fold_ops[optimized[i+2].opcode](a, b)
+                    if res is not None:
+                        new_code.append(Instruction(OpCode.PUSH, res, instr.line))
                         i += 3; changed = True; continue
                 new_code.append(instr); i += 1
             optimized = new_code
@@ -682,14 +677,16 @@ class SentryDataCompiler:
 
             if instr.opcode == OpCode.JUMP:
                 if instr.operand in label_map:
-                    pc = label_map[instr.operand]; continue
+                    pc = label_map[instr.operand]
+                    continue
 
             if instr.opcode == OpCode.JUMP_FALSE:
                 if self.stack:
                     condition = self.stack.pop()
                     if not bool(condition):
                         if instr.operand in label_map:
-                            pc = label_map[instr.operand]; continue
+                            pc = label_map[instr.operand]
+                            continue
 
             pc += 1
 
@@ -700,24 +697,25 @@ class SentryDataCompiler:
             self.stack.append(instr.operand)
             return f"PUSH {instr.operand}"
 
-        if op == OpCode.ADD: return self._bin_op("+",  lambda a, b: b + a)
-        if op == OpCode.SUB: return self._bin_op("-",  lambda a, b: b - a)
-        if op == OpCode.MUL: return self._bin_op("*",  lambda a, b: b * a)
+        if op == OpCode.ADD: return self._bin_op("+",   lambda a, b: b + a)
+        if op == OpCode.SUB: return self._bin_op("-",   lambda a, b: b - a)
+        if op == OpCode.MUL: return self._bin_op("*",   lambda a, b: b * a)
         if op == OpCode.DIV:
             if len(self.stack) >= 2 and self.stack[-1] == 0:
                 self.errors.append(CompilerError(instr.line, "EJECUCIÓN", "Error 301: División por cero"))
                 return "ERROR: División por cero"
             return self._bin_op("/", lambda a, b: b / a)
 
-        if op == OpCode.EQ:  return self._bin_op("==", lambda a, b: b == a)
-        if op == OpCode.NEQ: return self._bin_op("!=", lambda a, b: b != a)
-        if op == OpCode.LT:  return self._bin_op("<",  lambda a, b: b < a)
-        if op == OpCode.GT:  return self._bin_op(">",  lambda a, b: b > a)
-        if op == OpCode.LTE: return self._bin_op("<=", lambda a, b: b <= a)
-        if op == OpCode.GTE: return self._bin_op(">=", lambda a, b: b >= a)
+        if op == OpCode.EQ:  return self._bin_op("==",  lambda a, b: b == a)
+        if op == OpCode.NEQ: return self._bin_op("!=",  lambda a, b: b != a)
+        if op == OpCode.LT:  return self._bin_op("<",   lambda a, b: b < a)
+        if op == OpCode.GT:  return self._bin_op(">",   lambda a, b: b > a)
+        if op == OpCode.LTE: return self._bin_op("<=",  lambda a, b: b <= a)
+        if op == OpCode.GTE: return self._bin_op(">=",  lambda a, b: b >= a)
 
         if op == OpCode.AND: return self._bin_op("AND", lambda a, b: bool(b) and bool(a))
-        if op == OpCode.OR:  return self._bin_op("OR",  lambda a, b: bool(b) or bool(a))
+        if op == OpCode.OR:  return self._bin_op("OR",  lambda a, b: bool(b) or  bool(a))
+
         if op == OpCode.NOT:
             if not self.stack:
                 return "ERROR: Stack underflow en NOT"
@@ -837,12 +835,18 @@ class SentryDataCompiler:
             return "ERROR: No hay datos cargados"
 
         ops = {
-            "==": lambda fv, v: fv == v,  "!=": lambda fv, v: fv != v,
-            "<":  lambda fv, v: fv < v,   ">":  lambda fv, v: fv > v,
-            "<=": lambda fv, v: fv <= v,  ">=": lambda fv, v: fv >= v,
-            "eq":  lambda fv, v: fv == v, "neq": lambda fv, v: fv != v,
-            "lt":  lambda fv, v: fv < v,  "gt":  lambda fv, v: fv > v,
-            "lte": lambda fv, v: fv <= v, "gte": lambda fv, v: fv >= v,
+            "==":  lambda fv, v: fv == v,
+            "!=":  lambda fv, v: fv != v,
+            "<":   lambda fv, v: fv <  v,
+            ">":   lambda fv, v: fv >  v,
+            "<=":  lambda fv, v: fv <= v,
+            ">=":  lambda fv, v: fv >= v,
+            "eq":  lambda fv, v: fv == v,
+            "neq": lambda fv, v: fv != v,
+            "lt":  lambda fv, v: fv <  v,
+            "gt":  lambda fv, v: fv >  v,
+            "lte": lambda fv, v: fv <= v,
+            "gte": lambda fv, v: fv >= v,
         }
         fn = ops.get(operator) or ops.get(operator.lower())
         if not fn:
@@ -871,8 +875,10 @@ class SentryDataCompiler:
         if not self.loaded_data:
             return "ERROR: No hay datos cargados"
         original = len(self.loaded_data)
-        self.loaded_data = [r for r in self.loaded_data
-                            if field not in r.data or not r.data[field]]
+        self.loaded_data = [
+            r for r in self.loaded_data
+            if field not in r.data or not r.data[field]
+        ]
         deleted = original - len(self.loaded_data)
         return f"DELETE campo '{field}' → {deleted} registros eliminados"
 
@@ -905,6 +911,137 @@ class SentryDataCompiler:
         if not self.loaded_data:
             return "SHOW: No hay datos cargados"
         return f"SHOW {len(self.loaded_data)} registros"
+
+    # ========== ÁRBOL SEMÁNTICO ==========
+
+    def build_semantic_tree(self, tokens: List[Token]) -> dict:
+        root  = {"label": "PROGRAMA", "type": "ROOT", "dtype": "", "children": []}
+        stack = []
+
+        binary_ops = {
+            "OP_ADD": ("+",  "NUMBER"),  "OP_SUB": ("-",  "NUMBER"),
+            "OP_MUL": ("*",  "NUMBER"),  "OP_DIV": ("/",  "NUMBER"),
+            "OP_EQ":  ("==", "BOOLEAN"), "OP_NEQ": ("!=", "BOOLEAN"),
+            "OP_LT":  ("<",  "BOOLEAN"), "OP_GT":  (">",  "BOOLEAN"),
+            "OP_LTE": ("<=", "BOOLEAN"), "OP_GTE": (">=", "BOOLEAN"),
+        }
+
+        def make_node(label, ntype, dtype, children=None):
+            return {
+                "label":    label,
+                "type":     ntype,
+                "dtype":    dtype,
+                "children": children or []
+            }
+
+        for tok in tokens:
+            t = tok.type
+
+            if t == "NUMBER":
+                stack.append(make_node(str(tok.value), "NÚMERO", "NUMBER"))
+                continue
+
+            if t == "STRING":
+                stack.append(make_node(f'"{tok.value}"', "CADENA", "STRING"))
+                continue
+
+            if t in binary_ops:
+                sym, dtype = binary_ops[t]
+                right = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                left  = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                stack.append(make_node(sym, "OP-BINARIO", dtype, [left, right]))
+                continue
+
+            if t == "KEYWORD":
+                kw = tok.value.upper()
+
+                if kw in ("AND", "OR"):
+                    right = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    left  = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    stack.append(make_node(kw, "OP-LÓGICO", "BOOLEAN", [left, right]))
+                    continue
+
+                if kw == "NOT":
+                    child = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    stack.append(make_node("NOT", "OP-LÓGICO", "BOOLEAN", [child]))
+                    continue
+
+                if kw == "DUP":
+                    child = stack[-1] if stack else make_node("?", "VACÍO", "ANY")
+                    stack.append(make_node("DUP", "OP-PILA", child.get("dtype","ANY"), [child]))
+                    continue
+
+                if kw == "DROP":
+                    child = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("DROP", "OP-PILA", "VOID", [child]))
+                    continue
+
+                if kw == "SWAP":
+                    b = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    a = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("SWAP", "OP-PILA", "VOID", [a, b]))
+                    continue
+
+                if kw == "PRINT":
+                    child = stack[-1] if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("PRINT", "SALIDA", "VOID", [child]))
+                    continue
+
+                if kw == "LOAD":
+                    fname = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("LOAD", "OP-DATOS", "NUMBER", [fname]))
+                    continue
+
+                if kw == "SAVE":
+                    fname = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("SAVE", "OP-DATOS", "VOID", [fname]))
+                    continue
+
+                if kw == "FILTER":
+                    val   = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    op    = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("FILTER", "OP-DATOS", "VOID", [field, op, val]))
+                    continue
+
+                if kw == "MODIFY":
+                    val   = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    op    = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("MODIFY", "OP-DATOS", "VOID", [field, op, val]))
+                    continue
+
+                if kw == "DELETE":
+                    field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("DELETE", "OP-DATOS", "VOID", [field]))
+                    continue
+
+                if kw == "EXTRACT":
+                    field = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("EXTRACT", "OP-DATOS", "VOID", [field]))
+                    continue
+
+                if kw == "COUNT":
+                    root["children"].append(make_node("COUNT", "OP-DATOS", "NUMBER"))
+                    continue
+
+                if kw == "SHOW":
+                    root["children"].append(make_node("SHOW", "OP-DATOS", "VOID"))
+                    continue
+
+                if kw == "IF":
+                    cond = stack.pop() if stack else make_node("?", "VACÍO", "ANY")
+                    root["children"].append(make_node("IF", "CONTROL", "VOID", [cond]))
+                    continue
+
+                if kw in ("THEN", "ELSE", "ENDIF"):
+                    root["children"].append(make_node(kw, "CONTROL", "VOID"))
+                    continue
+
+        for leftover in stack:
+            root["children"].append(leftover)
+
+        return root
 
     # ========== INSPECCIÓN ==========
 
