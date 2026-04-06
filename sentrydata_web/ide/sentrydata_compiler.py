@@ -1004,38 +1004,34 @@ class SentryDataCompiler:
             return f"ERROR: {e}"
 
     def execute_jsave(self) -> str:
-    if not self.stack:
-        return "ERROR: Stack underflow en JSAVE"
-    filename = str(self.stack.pop())
-    if not self.loaded_data:
-        return "ERROR: No hay datos para guardar"
-    try:
-        # Reconstruir lista de objetos respetando el orden de headers
-        records = []
-        for rec in self.loaded_data:
-            obj = {}
-            # Primero las claves conocidas en orden
-            for h in self.current_headers:
-                if h in rec.data:
-                    val = rec.data[h]
-                    # Convertir float a int si es entero (ej: 1.0 → 1)
-                    if isinstance(val, float) and val.is_integer():
-                        val = int(val)
-                    obj[h] = val
-            # Luego cualquier clave extra que no esté en headers
-            for k, v in rec.data.items():
-                if k not in obj:
-                    if isinstance(v, float) and v.is_integer():
-                        v = int(v)
-                    obj[k] = v
-            records.append(obj)
+        if not self.stack:
+            return "ERROR: Stack underflow en JSAVE"
+        filename = str(self.stack.pop())
+        if not self.loaded_data:
+            return "ERROR: No hay datos para guardar"
+        try:
+            records = []
+            for rec in self.loaded_data:
+                obj = {}
+                for h in self.current_headers:
+                    if h in rec.data:
+                        val = rec.data[h]
+                        if isinstance(val, float) and val.is_integer():
+                            val = int(val)
+                        obj[h] = val
+                for k, v in rec.data.items():
+                    if k not in obj:
+                        if isinstance(v, float) and v.is_integer():
+                            v = int(v)
+                        obj[k] = v
+                records.append(obj)
 
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(records, f, ensure_ascii=False, indent=2)
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(records, f, ensure_ascii=False, indent=2)
 
-        return f"JSAVE '{filename}' → {len(self.loaded_data)} registros guardados"
-    except Exception as e:
-        return f"ERROR: {e}"
+            return f"JSAVE '{filename}' → {len(self.loaded_data)} registros guardados"
+        except Exception as e:
+            return f"ERROR: {e}"
 
     def execute_jget(self) -> str:
         if not self.stack:
