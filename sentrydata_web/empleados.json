@@ -1,5 +1,17 @@
 [
-  {"nombre": "Luis",  "edad": 35, "salario": 2800, "activo": 1, "bono": 1000},
-  {"nombre": "Marta", "edad": 40, "salario": 3200, "activo": 0, "bono": 1000},
-  {"nombre": "Sofia", "edad": 45, "salario": 3800, "activo": 1, "bono": 1000}
+  {"nombre": "Luis",     "edad": 35, "salario": 2800, "activo": 1, "bono": 1000, "departamento": "Ventas"},
+  {"nombre": "Marta",    "edad": 40, "salario": 3200, "activo": 0, "bono": 500,  "departamento": "RRHH"},
+  {"nombre": "Sofia",    "edad": 45, "salario": 3800, "activo": 1, "bono": 1200, "departamento": "TI"},
+  {"nombre": "Carlos",   "edad": 28, "salario": 2200, "activo": 1, "bono": 800,  "departamento": "Ventas"},
+  {"nombre": "Ana",      "edad": 33, "salario": 3000, "activo": 1, "bono": 950,  "departamento": "Finanzas"},
+  {"nombre": "Pedro",    "edad": 50, "salario": 4500, "activo": 0, "bono": 0,    "departamento": "Gerencia"},
+  {"nombre": "Valeria",  "edad": 27, "salario": 2100, "activo": 1, "bono": 700,  "departamento": "Soporte"},
+  {"nombre": "Jorge",    "edad": 38, "salario": 3400, "activo": 1, "bono": 1100, "departamento": "TI"},
+  {"nombre": "Lucia",    "edad": 31, "salario": 2750, "activo": 0, "bono": 300,  "departamento": "Ventas"},
+  {"nombre": "Miguel",   "edad": 44, "salario": 4100, "activo": 1, "bono": 1500, "departamento": "Gerencia"},
+  {"nombre": "Elena",    "edad": 29, "salario": 2400, "activo": 1, "bono": 850,  "departamento": "Soporte"},
+  {"nombre": "Roberto",  "edad": 52, "salario": 4800, "activo": 0, "bono": 0,    "departamento": "Gerencia"},
+  {"nombre": "Diana",    "edad": 36, "salario": 3100, "activo": 1, "bono": 1000, "departamento": "Finanzas"},
+  {"nombre": "Fernando", "edad": 41, "salario": 3600, "activo": 1, "bono": 1300, "departamento": "TI"},
+  {"nombre": "Carmen",   "edad": 25, "salario": 1900, "activo": 1, "bono": 600,  "departamento": "RRHH"}
 ]

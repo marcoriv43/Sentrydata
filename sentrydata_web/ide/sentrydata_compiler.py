@@ -1010,6 +1010,7 @@ class SentryDataCompiler:
         if not self.loaded_data:
             return "ERROR: No hay datos para guardar"
         try:
+<<<<<<< HEAD
             # Reconstruir lista de objetos respetando el orden de headers
             records = []
             for rec in self.loaded_data:
@@ -1023,6 +1024,17 @@ class SentryDataCompiler:
                             val = int(val)
                         obj[h] = val
                 # Luego cualquier clave extra que no esté en headers
+=======
+            records = []
+            for rec in self.loaded_data:
+                obj = {}
+                for h in self.current_headers:
+                    if h in rec.data:
+                        val = rec.data[h]
+                        if isinstance(val, float) and val.is_integer():
+                            val = int(val)
+                        obj[h] = val
+>>>>>>> 6f3c26edffbd26448490d98e12eea5ee53d3e211
                 for k, v in rec.data.items():
                     if k not in obj:
                         if isinstance(v, float) and v.is_integer():
