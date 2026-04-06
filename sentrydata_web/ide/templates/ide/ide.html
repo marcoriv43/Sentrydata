@@ -6,8 +6,8 @@
     <title>SentryData Web IDE</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #f8fafc; color: #1e293b; }
-        h1 { text-align: center; color: #1d4ed8; letter-spacing: 1px; margin-bottom: 1rem; }
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #0f172a; color: #e2e8f0; }
+        h1 { text-align: center; color: #38bdf8; letter-spacing: 1px; margin-bottom: 1rem; }
 
         .grid {
             display: grid;
@@ -16,10 +16,10 @@
             gap: 0.75rem;
         }
         .panel {
-            background: #ffffff;
+            background: #1e293b;
             border-radius: 8px;
             padding: 0.75rem;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
             overflow: auto;
         }
         .panel h2 {
@@ -27,8 +27,8 @@
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #64748b;
-            border-bottom: 1px solid #e2e8f0;
+            color: #94a3b8;
+            border-bottom: 1px solid #334155;
             padding-bottom: 0.4rem;
             margin-bottom: 0.5rem;
         }
@@ -40,9 +40,9 @@
             padding: 0.5rem;
             font-family: monospace;
             font-size: 0.9rem;
-            background: #f8fafc;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
+            background: #0f172a;
+            color: #f1f5f9;
+            border: 1px solid #334155;
         }
 
         .top-left  { grid-column: 1/2; grid-row: 1/2; }
@@ -53,9 +53,9 @@
         .bottom { grid-column: 1/3; grid-row: 3/4; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { border-bottom: 1px solid #e2e8f0; padding: 3px 6px; text-align: left; }
-        th { background: #f1f5f9; color: #1d4ed8; position: sticky; top: 0; }
-        tr:hover td { background: #f0f9ff; }
+        th, td { border-bottom: 1px solid #334155; padding: 3px 6px; text-align: left; }
+        th { background: #0f172a; color: #7dd3fc; position: sticky; top: 0; }
+        tr:hover td { background: #263244; }
 
         .btn-run {
             padding: 0.45rem 1.4rem;
@@ -70,31 +70,31 @@
         }
         .btn-run:hover { background: #1d4ed8; }
 
-        .badge-ok    { color: #16a34a; font-weight: 600; }
-        .badge-error { color: #dc2626; font-weight: 600; }
+        .badge-ok    { color: #4ade80; font-weight: 600; }
+        .badge-error { color: #f87171; font-weight: 600; }
 
         .result-section { margin-bottom: 0.8rem; }
         .result-section h3 {
             font-size: 0.8rem;
-            color: #1d4ed8;
+            color: #7dd3fc;
             text-transform: uppercase;
             margin: 0 0 0.3rem 0;
             letter-spacing: 0.05em;
         }
         .print-output {
-            background: #eff6ff;
-            border-left: 3px solid #2563eb;
+            background: #0f172a;
+            border-left: 3px solid #38bdf8;
             padding: 6px 10px;
             margin: 4px 0;
             font-family: monospace;
             border-radius: 0 4px 4px 0;
         }
-        .print-value { color: #d97706; font-weight: 700; font-size: 1.1rem; }
-        .print-label { color: #94a3b8; font-size: 0.8rem; }
+        .print-value { color: #fbbf24; font-weight: 700; font-size: 1.1rem; }
+        .print-label { color: #64748b; font-size: 0.8rem; }
 
         .csv-count {
             display: inline-block;
-            background: #2563eb;
+            background: #1d4ed8;
             color: white;
             border-radius: 12px;
             padding: 2px 10px;
@@ -103,19 +103,49 @@
             margin-left: 6px;
         }
 
+        /* Tabla de búsqueda / resultados de filtro */
+        .search-result-block {
+            background: #0f172a;
+            border: 1px solid #1e40af;
+            border-radius: 6px;
+            padding: 0.5rem 0.6rem;
+            margin-bottom: 0.6rem;
+        }
+        .search-result-block .sr-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+        .search-result-block .sr-op {
+            font-family: monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #38bdf8;
+            background: #1e3a5f;
+            border-radius: 4px;
+            padding: 1px 7px;
+        }
+        .search-result-block .sr-summary {
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+        .search-result-block table th { background: #172554; color: #93c5fd; }
+        .search-result-block table tr:hover td { background: #1e3a5f; }
+
         .stack-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: #0f172a;
+            border: 1px solid #334155;
             border-radius: 4px;
             padding: 4px 10px;
             margin-bottom: 4px;
             font-family: monospace;
         }
-        .stack-item.tope { border-color: #2563eb; color: #2563eb; font-weight: 700; }
-        .stack-label { font-size: 0.7rem; color: #94a3b8; }
+        .stack-item.tope { border-color: #38bdf8; color: #38bdf8; font-weight: 700; }
+        .stack-label { font-size: 0.7rem; color: #64748b; }
 
         #sem-tree {
             font-family: monospace;
@@ -123,7 +153,7 @@
             line-height: 1.6;
             overflow: auto;
             max-height: 220px;
-            background: #f8fafc;
+            background: #0f172a;
             border-radius: 6px;
             padding: 0.5rem;
             margin-top: 0.4rem;
@@ -137,24 +167,24 @@
             padding: 3px 0;
             font-family: monospace;
             font-size: 0.82rem;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #1e293b;
         }
-        .op-ins  { color: #1d4ed8; min-width: 160px; }
-        .op-act  { color: #1e293b; }
-        .op-act.error { color: #dc2626; }
+        .op-ins  { color: #7dd3fc; min-width: 160px; }
+        .op-act  { color: #e2e8f0; }
+        .op-act.error { color: #f87171; }
 
         .commands ul { margin: 0; padding-left: 1.1rem; font-size: 0.82rem; line-height: 1.8; }
         .commands code {
-            background: #eff6ff;
+            background: #0f172a;
             padding: 1px 5px;
             border-radius: 3px;
-            color: #1d4ed8;
+            color: #7dd3fc;
         }
-        .empty-msg { color: #94a3b8; font-style: italic; font-size: 0.85rem; }
+        .empty-msg { color: #475569; font-style: italic; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-    <h1>⚙️ SentryData — Web</h1>
+    <h1>⚙️ SentryData — Web IDE</h1>
 
     <form method="post">
         {% csrf_token %}
@@ -175,9 +205,7 @@
                     <h2>🔤 Analizador léxico</h2>
                     {% if result %}
                         <table>
-                            <thead>
-                                <tr><th>#</th><th>Tipo</th><th>Valor</th><th>L</th><th>C</th></tr>
-                            </thead>
+                            <thead><tr><th>#</th><th>Tipo</th><th>Valor</th><th>L</th><th>C</th></tr></thead>
                             <tbody>
                                 {% for t in result.tokens|slice:":50" %}
                                 <tr>
@@ -228,10 +256,9 @@
                                 {% endfor %}
                             </ul>
                         {% endif %}
-
                         {% if result.semantic_tree %}
                         <div style="margin-top:0.5rem;">
-                            <span style="font-size:0.78rem; color:#1d4ed8; font-weight:600;">🌳 Árbol semántico</span>
+                            <span style="font-size:0.78rem; color:#7dd3fc; font-weight:600;">🌳 Árbol semántico</span>
                             {{ result.semantic_tree|json_script:"sem-tree-data" }}
                             <div id="sem-tree"></div>
                         </div>
@@ -248,6 +275,7 @@
                 <h2>📊 Resultados de ejecución</h2>
                 {% if result %}
 
+                    <!-- Salidas PRINT -->
                     {% if result.print_outputs %}
                     <div class="result-section">
                         <h3>🖨️ Salidas PRINT</h3>
@@ -260,15 +288,53 @@
                     </div>
                     {% endif %}
 
+                    <!-- Operaciones realizadas -->
                     {% if result.operations %}
                     <div class="result-section">
                         <h3>⚙️ Operaciones realizadas</h3>
                         {% for op in result.operations %}
                         <div class="op-item">
                             <span class="op-ins"><code>{{ op.instr }}</code></span>
-                            <span class="op-act {% if 'ERROR' in op.action %}error{% endif %}">
-                                {{ op.action }}
-                            </span>
+                            <span class="op-act {% if 'ERROR' in op.action %}error{% endif %}">{{ op.action }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- ★ REGISTROS DE BÚSQUEDA / FILTRADO ★ -->
+                    {% if result.search_results %}
+                    <div class="result-section">
+                        <h3>🔎 Registros encontrados</h3>
+                        {% for sr in result.search_results %}
+                        <div class="search-result-block">
+                            <div class="sr-header">
+                                <span class="sr-op">{{ sr.operation }}</span>
+                                <span class="sr-summary">{{ sr.summary }}</span>
+                            </div>
+                            {% if sr.records %}
+                            <div style="overflow-x:auto; max-height:260px; overflow-y:auto;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            {% for h in sr.headers %}<th>{{ h }}</th>{% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in sr.records %}
+                                        <tr>
+                                            <td>{{ row.row_number }}</td>
+                                            {% for h in sr.headers %}
+                                                <td>{{ row.data|get_item:h }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                                <p class="empty-msg">Sin registros que coincidan.</p>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -280,18 +346,17 @@
                         <h3>📁 Datos en memoria
                             <span class="csv-count">{{ result.data_summary.records }} registros</span>
                         </h3>
-                        <p style="margin:0 0 0.4rem; font-size:0.82rem; color:#64748b;">
-                            Archivo: <strong style="color:#1e293b;">{{ result.data_summary.file }}</strong>
+                        <p style="margin:0 0 0.4rem; font-size:0.82rem; color:#94a3b8;">
+                            Archivo: <strong style="color:#e2e8f0;">{{ result.data_summary.file }}</strong>
                             &nbsp;|&nbsp; Columnas: {{ result.data_summary.headers|join:", " }}
                         </p>
                         {% if result.data_records %}
+                        <div style="overflow-x:auto; max-height:300px; overflow-y:auto;">
                         <table>
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    {% for h in result.data_summary.headers %}
-                                        <th>{{ h }}</th>
-                                    {% endfor %}
+                                    {% for h in result.data_summary.headers %}<th>{{ h }}</th>{% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -305,6 +370,7 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                        </div>
                         {% endif %}
                     </div>
                     {% endif %}
@@ -325,9 +391,7 @@
                     <h2>🚨 Tabla de errores</h2>
                     {% if result and result.all_errors %}
                         <table>
-                            <thead>
-                                <tr><th>L</th><th>Tipo</th><th>Descripción</th></tr>
-                            </thead>
+                            <thead><tr><th>L</th><th>Tipo</th><th>Descripción</th></tr></thead>
                             <tbody>
                                 {% for e in result.all_errors %}
                                 <tr>
@@ -371,9 +435,7 @@
                     <h2>🖥️ Log de ejecución VM</h2>
                     {% if result and result.execution_log %}
                         <table>
-                            <thead>
-                                <tr><th>PC</th><th>Instrucción</th><th>Acción</th><th>Pila</th></tr>
-                            </thead>
+                            <thead><tr><th>PC</th><th>Instrucción</th><th>Acción</th><th>Pila</th></tr></thead>
                             <tbody>
                                 {% for step in result.execution_log|slice:":60" %}
                                 <tr>
@@ -398,9 +460,7 @@
                         {% for v in result.stack reversed %}
                         <div class="stack-item {% if forloop.first %}tope{% endif %}">
                             <span>{{ v }}</span>
-                            <span class="stack-label">
-                                {% if forloop.first %}← tope{% else %}[{{ forloop.counter0 }}]{% endif %}
-                            </span>
+                            <span class="stack-label">{% if forloop.first %}← tope{% else %}[{{ forloop.counter0 }}]{% endif %}</span>
                         </div>
                         {% endfor %}
                     {% elif result %}
@@ -434,38 +494,27 @@
         const dataEl = document.getElementById("sem-tree-data");
         if (!dataEl) return;
         let tree;
-        try { tree = JSON.parse(dataEl.textContent); }
-        catch (e) { return; }
+        try { tree = JSON.parse(dataEl.textContent); } catch (e) { return; }
         const container = document.getElementById("sem-tree");
         if (!container) return;
         const COLORS = {
-            "ROOT":      "#38bdf8",
-            "NÚMERO":    "#fbbf24",
-            "CADENA":    "#a78bfa",
-            "OP-BINARIO":"#34d399",
-            "OP-LÓGICO": "#f472b6",
-            "OP-PILA":   "#fb923c",
-            "OP-DATOS":  "#60a5fa",
-            "CONTROL":   "#e879f9",
-            "SALIDA":    "#4ade80",
-            "VACÍO":     "#ef4444",
+            "ROOT":"#38bdf8","NÚMERO":"#fbbf24","CADENA":"#a78bfa",
+            "OP-BINARIO":"#34d399","OP-LÓGICO":"#f472b6","OP-PILA":"#fb923c",
+            "OP-DATOS":"#60a5fa","OP-JSON":"#4ade80","CONTROL":"#e879f9",
+            "SALIDA":"#4ade80","VACÍO":"#ef4444"
         };
         const ICONS = {
             "ROOT":"◆","NÚMERO":"🔢","CADENA":"📝","OP-BINARIO":"⚡",
-            "OP-LÓGICO":"🔗","OP-PILA":"📦","OP-DATOS":"🗃️",
+            "OP-LÓGICO":"🔗","OP-PILA":"📦","OP-DATOS":"🗃️","OP-JSON":"🔷",
             "CONTROL":"🔀","SALIDA":"🖨️","VACÍO":"❓"
         };
         function renderNode(node, prefix, isLast) {
-            const color    = COLORS[node.type] || "#e2e8f0";
-            const icon     = ICONS[node.type]  || "•";
-            const connector= isLast ? "└─ " : "├─ ";
-            const dtype    = node.dtype
-                ? `<span style="color:#475569;"> [${node.dtype}]</span>`
-                : "";
-            const label    = `<span style="color:${color}; font-weight:600;">${icon} ${node.label}</span>${dtype}`;
-
-            let html = `<div>${prefix}${connector}${label}</div>`;
-
+            const color = COLORS[node.type] || "#e2e8f0";
+            const icon  = ICONS[node.type]  || "•";
+            const conn  = isLast ? "└─ " : "├─ ";
+            const dtype = node.dtype ? `<span style="color:#475569;"> [${node.dtype}]</span>` : "";
+            const label = `<span style="color:${color}; font-weight:600;">${icon} ${node.label}</span>${dtype}`;
+            let html = `<div>${prefix}${conn}${label}</div>`;
             if (node.children && node.children.length) {
                 const cp = prefix + (isLast ? "   " : "│  ");
                 node.children.forEach((c, i) => { html += renderNode(c, cp, i === node.children.length - 1); });
