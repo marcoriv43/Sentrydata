@@ -5,8 +5,8 @@
     <title>SentryData Web IDE</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #0f172a; color: #e2e8f0; }
-        h1 { text-align: center; color: #38bdf8; letter-spacing: 1px; margin-bottom: 1rem; }
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #f8fafc; color: #1e293b; }
+        h1 { text-align: center; color: #1d4ed8; letter-spacing: 1px; margin-bottom: 1rem; }
 
         .grid {
             display: grid;
@@ -15,10 +15,10 @@
             gap: 0.75rem;
         }
         .panel {
-            background: #1e293b;
+            background: #ffffff;
             border-radius: 8px;
             padding: 0.75rem;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
             overflow: auto;
         }
         .panel h2 {
@@ -26,8 +26,8 @@
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #94a3b8;
-            border-bottom: 1px solid #334155;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
             padding-bottom: 0.4rem;
             margin-bottom: 0.5rem;
         }
@@ -39,9 +39,9 @@
             padding: 0.5rem;
             font-family: monospace;
             font-size: 0.9rem;
-            background: #0f172a;
-            color: #f1f5f9;
-            border: 1px solid #334155;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
         }
 
         .top-left  { grid-column: 1/2; grid-row: 1/2; }
@@ -52,9 +52,9 @@
         .bottom { grid-column: 1/3; grid-row: 3/4; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { border-bottom: 1px solid #334155; padding: 3px 6px; text-align: left; }
-        th { background: #0f172a; color: #7dd3fc; position: sticky; top: 0; }
-        tr:hover td { background: #263244; }
+        th, td { border-bottom: 1px solid #e2e8f0; padding: 3px 6px; text-align: left; }
+        th { background: #f1f5f9; color: #1d4ed8; position: sticky; top: 0; }
+        tr:hover td { background: #f0f9ff; }
 
         .btn-run {
             padding: 0.45rem 1.4rem;
@@ -69,32 +69,32 @@
         }
         .btn-run:hover { background: #1d4ed8; }
 
-        .badge-ok    { color: #4ade80; font-weight: 600; }
-        .badge-error { color: #f87171; font-weight: 600; }
+        .badge-ok    { color: #16a34a; font-weight: 600; }
+        .badge-error { color: #dc2626; font-weight: 600; }
 
         /* Panel de resultados */
         .result-section { margin-bottom: 0.8rem; }
         .result-section h3 {
             font-size: 0.8rem;
-            color: #7dd3fc;
+            color: #1d4ed8;
             text-transform: uppercase;
             margin: 0 0 0.3rem 0;
             letter-spacing: 0.05em;
         }
         .print-output {
-            background: #0f172a;
-            border-left: 3px solid #38bdf8;
+            background: #eff6ff;
+            border-left: 3px solid #2563eb;
             padding: 6px 10px;
             margin: 4px 0;
             font-family: monospace;
             border-radius: 0 4px 4px 0;
         }
-        .print-value { color: #fbbf24; font-weight: 700; font-size: 1.1rem; }
-        .print-label { color: #64748b; font-size: 0.8rem; }
+        .print-value { color: #d97706; font-weight: 700; font-size: 1.1rem; }
+        .print-label { color: #94a3b8; font-size: 0.8rem; }
 
         .csv-count {
             display: inline-block;
-            background: #1d4ed8;
+            background: #2563eb;
             color: white;
             border-radius: 12px;
             padding: 2px 10px;
@@ -108,15 +108,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #0f172a;
-            border: 1px solid #334155;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 4px;
             padding: 4px 10px;
             margin-bottom: 4px;
             font-family: monospace;
         }
-        .stack-item.tope { border-color: #38bdf8; color: #38bdf8; font-weight: 700; }
-        .stack-label { font-size: 0.7rem; color: #64748b; }
+        .stack-item.tope { border-color: #2563eb; color: #2563eb; font-weight: 700; }
+        .stack-label { font-size: 0.7rem; color: #94a3b8; }
 
         /* Árbol semántico */
         #sem-tree {
@@ -125,7 +125,7 @@
             line-height: 1.6;
             overflow: auto;
             max-height: 220px;
-            background: #0f172a;
+            background: #f8fafc;
             border-radius: 6px;
             padding: 0.5rem;
             margin-top: 0.4rem;
@@ -139,24 +139,24 @@
             padding: 3px 0;
             font-family: monospace;
             font-size: 0.82rem;
-            border-bottom: 1px solid #1e293b;
+            border-bottom: 1px solid #e2e8f0;
         }
-        .op-ins  { color: #7dd3fc; min-width: 160px; }
-        .op-act  { color: #e2e8f0; }
-        .op-act.error { color: #f87171; }
+        .op-ins  { color: #1d4ed8; min-width: 160px; }
+        .op-act  { color: #1e293b; }
+        .op-act.error { color: #dc2626; }
 
         .commands ul { margin: 0; padding-left: 1.1rem; font-size: 0.82rem; line-height: 1.8; }
         .commands code {
-            background: #0f172a;
+            background: #eff6ff;
             padding: 1px 5px;
             border-radius: 3px;
-            color: #7dd3fc;
+            color: #1d4ed8;
         }
-        .empty-msg { color: #475569; font-style: italic; font-size: 0.85rem; }
+        .empty-msg { color: #94a3b8; font-style: italic; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-    <h1>⚙️ SentryData — Web IDE</h1>
+    <h1>⚙️ SentryData — Web</h1>
 
     <form method="post">
         {% csrf_token %}
@@ -233,7 +233,7 @@
 
                         {% if result.semantic_tree %}
                         <div style="margin-top:0.5rem;">
-                            <span style="font-size:0.78rem; color:#7dd3fc; font-weight:600;">🌳 Árbol semántico</span>
+                            <span style="font-size:0.78rem; color:#1d4ed8; font-weight:600;">🌳 Árbol semántico</span>
                             {{ result.semantic_tree|json_script:"sem-tree-data" }}
                             <div id="sem-tree"></div>
                         </div>
@@ -284,8 +284,8 @@
                         <h3>📁 Datos en memoria
                             <span class="csv-count">{{ result.data_summary.records }} registros</span>
                         </h3>
-                        <p style="margin:0 0 0.4rem; font-size:0.82rem; color:#94a3b8;">
-                            Archivo: <strong style="color:#e2e8f0;">{{ result.data_summary.file }}</strong>
+                        <p style="margin:0 0 0.4rem; font-size:0.82rem; color:#64748b;">
+                            Archivo: <strong style="color:#1e293b;">{{ result.data_summary.file }}</strong>
                             &nbsp;|&nbsp; Columnas: {{ result.data_summary.headers|join:", " }}
                         </p>
                         {% if result.data_records %}
@@ -447,16 +447,16 @@
         if (!container) return;
 
         const COLORS = {
-            "ROOT":      "#38bdf8",
-            "NÚMERO":    "#fbbf24",
-            "CADENA":    "#a78bfa",
-            "OP-BINARIO":"#34d399",
-            "OP-LÓGICO": "#f472b6",
-            "OP-PILA":   "#fb923c",
-            "OP-DATOS":  "#60a5fa",
-            "CONTROL":   "#e879f9",
-            "SALIDA":    "#4ade80",
-            "VACÍO":     "#ef4444",
+            "ROOT":      "#1d4ed8",
+            "NÚMERO":    "#b45309",
+            "CADENA":    "#7c3aed",
+            "OP-BINARIO":"#059669",
+            "OP-LÓGICO": "#db2777",
+            "OP-PILA":   "#ea580c",
+            "OP-DATOS":  "#2563eb",
+            "CONTROL":   "#9333ea",
+            "SALIDA":    "#16a34a",
+            "VACÍO":     "#dc2626",
         };
 
         const ICONS = {
@@ -473,11 +473,11 @@
         };
 
         function renderNode(node, prefix, isLast) {
-            const color    = COLORS[node.type] || "#e2e8f0";
+            const color    = COLORS[node.type] || "#1e293b";
             const icon     = ICONS[node.type]  || "•";
             const connector= isLast ? "└─ " : "├─ ";
             const dtype    = node.dtype
-                ? `<span style="color:#475569;"> [${node.dtype}]</span>`
+                ? `<span style="color:#94a3b8;"> [${node.dtype}]</span>`
                 : "";
             const label    = `<span style="color:${color}; font-weight:600;">${icon} ${node.label}</span>${dtype}`;
 

@@ -4,20 +4,95 @@
     "edad": 35,
     "salario": 2800,
     "activo": 1,
-    "bono": 1000
+    "bono": 1000,
+    "departamento": "Ventas"
   },
   {
     "nombre": "Marta",
     "edad": 40,
     "salario": 3200,
     "activo": 0,
-    "bono": 1000
+    "bono": 1000,
+    "departamento": "RRHH"
   },
   {
     "nombre": "Sofia",
     "edad": 45,
     "salario": 3800,
     "activo": 1,
-    "bono": 1000
+    "bono": 1000,
+    "departamento": "TI"
+  },
+  {
+    "nombre": "Carlos",
+    "edad": 28,
+    "salario": 2200,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "Ventas"
+  },
+  {
+    "nombre": "Ana",
+    "edad": 33,
+    "salario": 3000,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "Finanzas"
+  },
+  {
+    "nombre": "Valeria",
+    "edad": 27,
+    "salario": 2100,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "Soporte"
+  },
+  {
+    "nombre": "Jorge",
+    "edad": 38,
+    "salario": 3400,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "TI"
+  },
+  {
+    "nombre": "Lucia",
+    "edad": 31,
+    "salario": 2750,
+    "activo": 0,
+    "bono": 1000,
+    "departamento": "Ventas"
+  },
+  {
+    "nombre": "Miguel",
+    "edad": 44,
+    "salario": 4100,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "Gerencia"
+  },
+  {
+    "nombre": "Elena",
+    "edad": 29,
+    "salario": 2400,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "Soporte"
+  },
+  {
+    "nombre": "Diana",
+    "edad": 36,
+    "salario": 3100,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "Finanzas"
+  },
+  {
+    "nombre": "Fernando",
+    "edad": 41,
+    "salario": 3600,
+    "activo": 1,
+    "bono": 1000,
+    "departamento": "TI"
   }
 ]
