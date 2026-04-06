@@ -1,3 +1,4 @@
+{% load dict_extras %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -72,7 +73,6 @@
         .badge-ok    { color: #4ade80; font-weight: 600; }
         .badge-error { color: #f87171; font-weight: 600; }
 
-        /* Panel de resultados */
         .result-section { margin-bottom: 0.8rem; }
         .result-section h3 {
             font-size: 0.8rem;
@@ -103,7 +103,6 @@
             margin-left: 6px;
         }
 
-        /* Pila visual */
         .stack-item {
             display: flex;
             justify-content: space-between;
@@ -118,7 +117,6 @@
         .stack-item.tope { border-color: #38bdf8; color: #38bdf8; font-weight: 700; }
         .stack-label { font-size: 0.7rem; color: #64748b; }
 
-        /* Árbol semántico */
         #sem-tree {
             font-family: monospace;
             font-size: 0.78rem;
@@ -162,14 +160,14 @@
         {% csrf_token %}
         <div class="grid">
 
-            <!-- ── PROMPT ── -->
+            <!-- PROMPT -->
             <div class="panel top-left">
                 <h2>📝 Prompt – Instrucciones del compilador</h2>
                 <textarea name="code" placeholder="Escribe aquí tu código SentryData...">{{ code }}</textarea>
                 <button type="submit" class="btn-run">▶ Compilar y ejecutar</button>
             </div>
 
-            <!-- ── ANALIZADORES ── -->
+            <!-- ANALIZADORES -->
             <div class="top-right">
 
                 <!-- LÉXICO -->
@@ -245,12 +243,11 @@
 
             </div>
 
-            <!-- ── PANEL PRINCIPAL DE RESULTADOS ── -->
+            <!-- PANEL PRINCIPAL DE RESULTADOS -->
             <div class="panel middle-left">
                 <h2>📊 Resultados de ejecución</h2>
                 {% if result %}
 
-                    <!-- Salidas PRINT -->
                     {% if result.print_outputs %}
                     <div class="result-section">
                         <h3>🖨️ Salidas PRINT</h3>
@@ -263,7 +260,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- Operaciones realizadas -->
                     {% if result.operations %}
                     <div class="result-section">
                         <h3>⚙️ Operaciones realizadas</h3>
@@ -278,7 +274,7 @@
                     </div>
                     {% endif %}
 
-                    <!-- Datos CSV en memoria -->
+                    <!-- Datos CSV/JSON en memoria -->
                     {% if result.data_summary %}
                     <div class="result-section">
                         <h3>📁 Datos en memoria
@@ -303,7 +299,7 @@
                                 <tr>
                                     <td>{{ row.row_number }}</td>
                                     {% for h in result.data_summary.headers %}
-                                        <td>{{ row.data|default_if_none:"-" }}</td>
+                                        <td>{{ row.data|get_item:h }}</td>
                                     {% endfor %}
                                 </tr>
                                 {% endfor %}
@@ -322,7 +318,7 @@
                 {% endif %}
             </div>
 
-            <!-- ── ERRORES + COMANDOS ── -->
+            <!-- ERRORES + COMANDOS -->
             <div class="middle-right">
 
                 <div class="panel">
@@ -368,7 +364,7 @@
                 </div>
             </div>
 
-            <!-- ── LOG + PILA + BYTECODE ── -->
+            <!-- LOG + PILA + BYTECODE -->
             <div class="bottom">
 
                 <div class="panel">
@@ -433,74 +429,42 @@
         </div>
     </form>
 
-    <!-- ── SCRIPT ÁRBOL SEMÁNTICO ── -->
     <script>
     (function () {
         const dataEl = document.getElementById("sem-tree-data");
         if (!dataEl) return;
-
         let tree;
         try { tree = JSON.parse(dataEl.textContent); }
         catch (e) { return; }
-
         const container = document.getElementById("sem-tree");
         if (!container) return;
-
         const COLORS = {
-            "ROOT":      "#38bdf8",
-            "NÚMERO":    "#fbbf24",
-            "CADENA":    "#a78bfa",
-            "OP-BINARIO":"#34d399",
-            "OP-LÓGICO": "#f472b6",
-            "OP-PILA":   "#fb923c",
-            "OP-DATOS":  "#60a5fa",
-            "CONTROL":   "#e879f9",
-            "SALIDA":    "#4ade80",
-            "VACÍO":     "#ef4444",
+            "ROOT":"#38bdf8","NÚMERO":"#fbbf24","CADENA":"#a78bfa",
+            "OP-BINARIO":"#34d399","OP-LÓGICO":"#f472b6","OP-PILA":"#fb923c",
+            "OP-DATOS":"#60a5fa","CONTROL":"#e879f9","SALIDA":"#4ade80","VACÍO":"#ef4444"
         };
-
         const ICONS = {
-            "ROOT":      "◆",
-            "NÚMERO":    "🔢",
-            "CADENA":    "📝",
-            "OP-BINARIO":"⚡",
-            "OP-LÓGICO": "🔗",
-            "OP-PILA":   "📦",
-            "OP-DATOS":  "🗃️",
-            "CONTROL":   "🔀",
-            "SALIDA":    "🖨️",
-            "VACÍO":     "❓",
+            "ROOT":"◆","NÚMERO":"🔢","CADENA":"📝","OP-BINARIO":"⚡",
+            "OP-LÓGICO":"🔗","OP-PILA":"📦","OP-DATOS":"🗃️",
+            "CONTROL":"🔀","SALIDA":"🖨️","VACÍO":"❓"
         };
-
         function renderNode(node, prefix, isLast) {
-            const color    = COLORS[node.type] || "#e2e8f0";
-            const icon     = ICONS[node.type]  || "•";
-            const connector= isLast ? "└─ " : "├─ ";
-            const dtype    = node.dtype
-                ? `<span style="color:#475569;"> [${node.dtype}]</span>`
-                : "";
-            const label    = `<span style="color:${color}; font-weight:600;">${icon} ${node.label}</span>${dtype}`;
-
-            let html = `<div>${prefix}${connector}${label}</div>`;
-
+            const color = COLORS[node.type] || "#e2e8f0";
+            const icon  = ICONS[node.type]  || "•";
+            const conn  = isLast ? "└─ " : "├─ ";
+            const dtype = node.dtype ? `<span style="color:#475569;"> [${node.dtype}]</span>` : "";
+            const label = `<span style="color:${color}; font-weight:600;">${icon} ${node.label}</span>${dtype}`;
+            let html = `<div>${prefix}${conn}${label}</div>`;
             if (node.children && node.children.length) {
-                const childPrefix = prefix + (isLast ? "   " : "│  ");
-                node.children.forEach((child, idx) => {
-                    const last = idx === node.children.length - 1;
-                    html += renderNode(child, childPrefix, last);
-                });
+                const cp = prefix + (isLast ? "   " : "│  ");
+                node.children.forEach((c, i) => { html += renderNode(c, cp, i === node.children.length - 1); });
             }
             return html;
         }
-
-        // Raíz
         const rootColor = COLORS["ROOT"];
         let html = `<div><span style="color:${rootColor}; font-weight:700;">◆ ${tree.label}</span></div>`;
         if (tree.children) {
-            tree.children.forEach((child, idx) => {
-                const last = idx === tree.children.length - 1;
-                html += renderNode(child, "", last);
-            });
+            tree.children.forEach((c, i) => { html += renderNode(c, "", i === tree.children.length - 1); });
         }
         container.innerHTML = html;
     })();
