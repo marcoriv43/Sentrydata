@@ -2,508 +2,483 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>SentryData Web IDE</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: system-ui, sans-serif;
-      margin: 0; padding: 1rem;
-      background: #0f172a; color: #e2e8f0;
-    }
-    h1 { text-align: center; color: #38bdf8; letter-spacing: 1px; margin-bottom: 1rem; }
+    <meta charset="UTF-8">
+    <title>SentryData Web IDE</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #f8fafc; color: #1e293b; }
+        h1 { text-align: center; color: #1d4ed8; letter-spacing: 1px; margin-bottom: 1rem; }
 
-    /* ---- layout ---- */
-    .grid {
-      display: grid;
-      grid-template-columns: 2fr 1.2fr;
-      grid-template-rows: auto 1fr auto;
-      gap: 0.75rem;
-    }
-    .panel {
-      background: #1e293b;
-      border-radius: 8px;
-      padding: 0.75rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      overflow: auto;
-    }
-    .panel h2 {
-      margin-top: 0;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-      color: #94a3b8;
-      border-bottom: 1px solid #334155;
-      padding-bottom: .35rem;
-      margin-bottom: .5rem;
-    }
-    .top-left  { grid-column:1/2; grid-row:1/2; }
-    .top-right { grid-column:2/3; grid-row:1/2; display:grid; gap:.5rem; }
-    .top-right .panel { max-height:160px; overflow:auto; }
-    .middle-left  { grid-column:1/2; grid-row:2/3; }
-    .middle-right { grid-column:2/3; grid-row:2/3; display:grid; grid-template-rows:1fr 1fr; gap:.5rem; }
-    .bottom { grid-column:1/3; grid-row:3/4; display:grid; grid-template-columns:2fr 1fr 1fr; gap:.5rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 0.75rem;
+        }
+        .panel {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 0.75rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+            overflow: auto;
+        }
+        .panel h2 {
+            margin-top: 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+        textarea {
+            width: 100%;
+            height: 240px;
+            resize: vertical;
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+        }
 
-    /* ---- base components ---- */
-    textarea {
-      width:100%; height:240px; resize:vertical;
-      border-radius:6px; padding:.5rem;
-      font-family:monospace; font-size:.9rem;
-      background:#0f172a; color:#f1f5f9;
-      border:1px solid #334155;
-    }
-    table { width:100%; border-collapse:collapse; font-size:.8rem; }
-    th,td { border-bottom:1px solid #334155; padding:3px 6px; text-align:left; }
-    th { background:#0f172a; color:#7dd3fc; position:sticky; top:0; z-index:1; }
-    tr:hover td { background:#263244; }
+        .top-left  { grid-column: 1/2; grid-row: 1/2; }
+        .top-right { grid-column: 2/3; grid-row: 1/2; display: grid; gap: 0.5rem; }
+        .top-right .panel { max-height: 160px; overflow: auto; }
+        .middle-left  { grid-column: 1/2; grid-row: 2/3; }
+        .middle-right { grid-column: 2/3; grid-row: 2/3; display: grid; grid-template-rows: 1fr 1fr; gap: 0.5rem; }
+        .bottom { grid-column: 1/3; grid-row: 3/4; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; }
 
-    .btn-run {
-      padding:.45rem 1.4rem; border-radius:5px; border:none;
-      background:#2563eb; color:white; cursor:pointer;
-      margin-top:.5rem; font-size:.9rem; font-weight:600;
-    }
-    .btn-run:hover { background:#1d4ed8; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { border-bottom: 1px solid #e2e8f0; padding: 3px 6px; text-align: left; }
+        th { background: #f1f5f9; color: #1d4ed8; position: sticky; top: 0; }
+        tr:hover td { background: #f0f9ff; }
 
-    .badge-ok    { color:#4ade80; font-weight:600; }
-    .badge-error { color:#f87171; font-weight:600; }
-    .empty-msg   { color:#475569; font-style:italic; font-size:.85rem; }
+        .btn-run {
+            padding: 0.45rem 1.4rem;
+            border-radius: 5px;
+            border: none;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .btn-run:hover { background: #1d4ed8; }
 
-    /* ---- result sections ---- */
-    .result-section { margin-bottom:.9rem; }
-    .result-section h3 {
-      font-size:.78rem; color:#7dd3fc;
-      text-transform:uppercase; letter-spacing:.05em;
-      margin:0 0 .35rem 0;
-    }
+        .badge-ok    { color: #16a34a; font-weight: 600; }
+        .badge-error { color: #dc2626; font-weight: 600; }
 
-    /* PRINT */
-    .print-output {
-      background:#0f172a;
-      border-left:3px solid #38bdf8;
-      padding:5px 10px; margin:3px 0;
-      font-family:monospace;
-      border-radius:0 4px 4px 0;
-    }
-    .print-value { color:#fbbf24; font-weight:700; font-size:1.05rem; }
-    .print-label { color:#64748b; font-size:.78rem; }
+        .result-section { margin-bottom: 0.8rem; }
+        .result-section h3 {
+            font-size: 0.8rem;
+            color: #1d4ed8;
+            text-transform: uppercase;
+            margin: 0 0 0.3rem 0;
+            letter-spacing: 0.05em;
+        }
+        .print-output {
+            background: #eff6ff;
+            border-left: 3px solid #2563eb;
+            padding: 6px 10px;
+            margin: 4px 0;
+            font-family: monospace;
+            border-radius: 0 4px 4px 0;
+        }
+        .print-value { color: #d97706; font-weight: 700; font-size: 1.1rem; }
+        .print-label { color: #94a3b8; font-size: 0.8rem; }
 
-    /* ARITHMETIC */
-    .arith-item {
-      display:flex; align-items:center; gap:.5rem;
-      padding:4px 8px; margin:2px 0;
-      background:#0f172a; border-radius:4px;
-      font-family:monospace; font-size:.85rem;
-      border:1px solid #1e3a5f;
-    }
-    .arith-pc   { color:#475569; font-size:.72rem; min-width:28px; }
-    .arith-expr { color:#e2e8f0; flex:1; }
-    .arith-result { color:#4ade80; font-weight:700; }
-    .arith-stack  { color:#64748b; font-size:.72rem; margin-left:auto; }
+        .csv-count {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 6px;
+        }
 
-    /* OPERACIONES (LOAD, SAVE, etc.) */
-    .op-item {
-      display:flex; gap:.5rem; align-items:flex-start;
-      padding:3px 0; font-family:monospace; font-size:.82rem;
-      border-bottom:1px solid #1e293b;
-    }
-    .op-ins  { color:#7dd3fc; min-width:140px; }
-    .op-act  { color:#e2e8f0; }
-    .op-act.error { color:#f87171; }
+        .stack-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 4px 10px;
+            margin-bottom: 4px;
+            font-family: monospace;
+        }
+        .stack-item.tope { border-color: #2563eb; color: #2563eb; font-weight: 700; }
+        .stack-label { font-size: 0.7rem; color: #94a3b8; }
 
-    /* SEARCH RESULTS */
-    .search-result-block {
-      background:#0a1628;
-      border:1px solid #1e40af;
-      border-radius:6px;
-      padding:.5rem .6rem;
-      margin-bottom:.5rem;
-    }
-    .sr-header {
-      display:flex; align-items:center; gap:.5rem;
-      margin-bottom:.35rem;
-    }
-    .sr-op {
-      font-family:monospace; font-size:.76rem; font-weight:700;
-      color:#38bdf8; background:#1e3a5f;
-      border-radius:4px; padding:1px 7px;
-    }
-    .sr-summary { font-size:.78rem; color:#94a3b8; }
-    .search-result-block table th { background:#172554; color:#93c5fd; }
-    .search-result-block tr:hover td { background:#1e3a5f; }
+        #sem-tree {
+            font-family: monospace;
+            font-size: 0.78rem;
+            line-height: 1.6;
+            overflow: auto;
+            max-height: 220px;
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 0.5rem;
+            margin-top: 0.4rem;
+            white-space: pre;
+        }
 
-    /* DATA IN MEMORY */
-    .csv-count {
-      display:inline-block;
-      background:#1d4ed8; color:white;
-      border-radius:12px; padding:2px 10px;
-      font-size:.78rem; font-weight:600; margin-left:6px;
-    }
+        .op-item {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+            padding: 3px 0;
+            font-family: monospace;
+            font-size: 0.82rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .op-ins  { color: #1d4ed8; min-width: 160px; }
+        .op-act  { color: #1e293b; }
+        .op-act.error { color: #dc2626; }
 
-    /* STACK */
-    .stack-item {
-      display:flex; justify-content:space-between; align-items:center;
-      background:#0f172a; border:1px solid #334155;
-      border-radius:4px; padding:4px 10px; margin-bottom:4px;
-      font-family:monospace;
-    }
-    .stack-item.tope { border-color:#38bdf8; color:#38bdf8; font-weight:700; }
-    .stack-label { font-size:.7rem; color:#64748b; }
-
-    /* SEMANTIC TREE */
-    #sem-tree {
-      font-family:monospace; font-size:.78rem; line-height:1.6;
-      overflow:auto; max-height:220px;
-      background:#0f172a; border-radius:6px;
-      padding:.5rem; margin-top:.4rem; white-space:pre;
-    }
-
-    /* COMMANDS */
-    .commands ul { margin:0; padding-left:1.1rem; font-size:.82rem; line-height:1.8; }
-    .commands code {
-      background:#0f172a; padding:1px 5px;
-      border-radius:3px; color:#7dd3fc;
-    }
-
-    /* scrollable table wrapper */
-    .tbl-wrap { overflow:auto; max-height:280px; overflow-y:auto; }
-  </style>
+        .commands ul { margin: 0; padding-left: 1.1rem; font-size: 0.82rem; line-height: 1.8; }
+        .commands code {
+            background: #eff6ff;
+            padding: 1px 5px;
+            border-radius: 3px;
+            color: #1d4ed8;
+        }
+        .empty-msg { color: #94a3b8; font-style: italic; font-size: 0.85rem; }
+    </style>
 </head>
 <body>
-  <h1>&#9881;&#65039; SentryData &mdash; Web IDE</h1>
+    <h1>⚙️ SentryData — Web</h1>
 
-  <form method="post">
-    {% csrf_token %}
-    <div class="grid">
+    <form method="post">
+        {% csrf_token %}
+        <div class="grid">
 
-      <!-- PROMPT -->
-      <div class="panel top-left">
-        <h2>&#128221; Prompt &ndash; Instrucciones del compilador</h2>
-        <textarea name="code" placeholder="Escribe aqu&#237; tu c&#243;digo SentryData...">{{ code }}</textarea>
-        <button type="submit" class="btn-run">&#9654; Compilar y ejecutar</button>
-      </div>
-
-      <!-- COLUMNA DERECHA: analizadores -->
-      <div class="top-right">
-
-        <!-- LEXICO -->
-        <div class="panel">
-          <h2>&#128292; Analizador l&#233;xico</h2>
-          {% if result %}
-            <table>
-              <thead><tr><th>#</th><th>Tipo</th><th>Valor</th><th>L</th><th>C</th></tr></thead>
-              <tbody>
-                {% for t in result.tokens|slice:":50" %}
-                <tr>
-                  <td>{{ forloop.counter }}</td><td>{{ t.type }}</td>
-                  <td>{{ t.value }}</td><td>{{ t.line }}</td><td>{{ t.column }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          {% else %}<p class="empty-msg">Sin tokens todav&#237;a.</p>{% endif %}
-        </div>
-
-        <!-- SINTACTICO -->
-        <div class="panel">
-          <h2>&#129513; Analizador sint&#225;ctico</h2>
-          {% if result %}
-            {% if result.syntax_ok %}
-              <p class="badge-ok">&#10003; Estructura sint&#225;ctica v&#225;lida</p>
-            {% else %}
-              <p class="badge-error">&#10007; Errores sint&#225;cticos:</p>
-              <ul>{% for e in result.syntax_errors %}<li>L{{ e.line }} &ndash; {{ e.description }}</li>{% endfor %}</ul>
-            {% endif %}
-          {% else %}<p class="empty-msg">Ejecuta el compilador.</p>{% endif %}
-        </div>
-
-        <!-- SEMANTICO + ARBOL -->
-        <div class="panel" style="max-height:340px;">
-          <h2>&#128269; Analizador sem&#225;ntico</h2>
-          {% if result %}
-            {% if result.semantic_ok %}
-              <p class="badge-ok">&#10003; An&#225;lisis sem&#225;ntico correcto</p>
-            {% else %}
-              <p class="badge-error">&#10007; Errores sem&#225;nticos:</p>
-              <ul>{% for e in result.semantic_errors %}<li>L{{ e.line }} &ndash; {{ e.description }}</li>{% endfor %}</ul>
-            {% endif %}
-            {% if result.semantic_tree %}
-            <div style="margin-top:.5rem;">
-              <span style="font-size:.78rem;color:#7dd3fc;font-weight:600;">&#127795; &#193;rbol sem&#225;ntico</span>
-              {{ result.semantic_tree|json_script:"sem-tree-data" }}
-              <div id="sem-tree"></div>
+            <!-- PROMPT -->
+            <div class="panel top-left">
+                <h2>📝 Prompt – Instrucciones del compilador</h2>
+                <textarea name="code" placeholder="Escribe aquí tu código SentryData...">{{ code }}</textarea>
+                <button type="submit" class="btn-run">▶ Compilar y ejecutar</button>
             </div>
-            {% endif %}
-          {% else %}<p class="empty-msg">Ejecuta el compilador.</p>{% endif %}
-        </div>
 
-      </div><!-- /top-right -->
+            <!-- ANALIZADORES -->
+            <div class="top-right">
 
-      <!-- =====================================================
-           PANEL PRINCIPAL DE RESULTADOS (combinado)
-           ===================================================== -->
-      <div class="panel middle-left">
-        <h2>&#128202; Resultados de ejecuci&#243;n</h2>
+                <!-- LÉXICO -->
+                <div class="panel">
+                    <h2>🔤 Analizador léxico</h2>
+                    {% if result %}
+                        <table>
+                            <thead>
+                                <tr><th>#</th><th>Tipo</th><th>Valor</th><th>L</th><th>C</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for t in result.tokens|slice:":50" %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ t.type }}</td>
+                                    <td>{{ t.value }}</td>
+                                    <td>{{ t.line }}</td>
+                                    <td>{{ t.column }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="empty-msg">Sin tokens todavía.</p>
+                    {% endif %}
+                </div>
 
-        {% if result %}
+                <!-- SINTÁCTICO -->
+                <div class="panel">
+                    <h2>🧩 Analizador sintáctico</h2>
+                    {% if result %}
+                        {% if result.syntax_ok %}
+                            <p class="badge-ok">✓ Estructura sintáctica válida</p>
+                        {% else %}
+                            <p class="badge-error">✗ Errores sintácticos:</p>
+                            <ul>
+                                {% for e in result.syntax_errors %}
+                                    <li>L{{ e.line }} – {{ e.description }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% else %}
+                        <p class="empty-msg">Ejecuta el compilador.</p>
+                    {% endif %}
+                </div>
 
-          <!-- 1. SALIDAS PRINT -->
-          {% if result.print_outputs %}
-          <div class="result-section">
-            <h3>&#128424;&#65039; Salidas PRINT</h3>
-            {% for item in result.print_outputs %}
-            <div class="print-output">
-              <span class="print-label">paso {{ item.pc }} &rarr;</span>
-              <span class="print-value"> {{ item.value }}</span>
+                <!-- SEMÁNTICO + ÁRBOL -->
+                <div class="panel" style="max-height: 340px;">
+                    <h2>🔍 Analizador semántico</h2>
+                    {% if result %}
+                        {% if result.semantic_ok %}
+                            <p class="badge-ok">✓ Análisis semántico correcto</p>
+                        {% else %}
+                            <p class="badge-error">✗ Errores semánticos:</p>
+                            <ul>
+                                {% for e in result.semantic_errors %}
+                                    <li>L{{ e.line }} – {{ e.description }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        {% if result.semantic_tree %}
+                        <div style="margin-top:0.5rem;">
+                            <span style="font-size:0.78rem; color:#1d4ed8; font-weight:600;">🌳 Árbol semántico</span>
+                            {{ result.semantic_tree|json_script:"sem-tree-data" }}
+                            <div id="sem-tree"></div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="empty-msg">Ejecuta el compilador.</p>
+                    {% endif %}
+                </div>
+
             </div>
-            {% endfor %}
-          </div>
-          {% endif %}
 
-          <!-- 2. RESULTADOS ARITMETICOS / LOGICOS / PILA -->
-          {% if result.arithmetic_results %}
-          <div class="result-section">
-            <h3>&#9889; Operaciones aritm&#233;ticas / l&#243;gicas</h3>
-            {% for ar in result.arithmetic_results %}
-            <div class="arith-item">
-              <span class="arith-pc">pc{{ ar.pc }}</span>
-              <span class="arith-expr">{{ ar.action }}</span>
-              <span class="arith-stack">pila: {{ ar.stack }}</span>
+            <!-- PANEL PRINCIPAL DE RESULTADOS -->
+            <div class="panel middle-left">
+                <h2>📊 Resultados de ejecución</h2>
+                {% if result %}
+
+                    {% if result.print_outputs %}
+                    <div class="result-section">
+                        <h3>🖨️ Salidas PRINT</h3>
+                        {% for item in result.print_outputs %}
+                        <div class="print-output">
+                            <span class="print-label">paso {{ item.line }} →</span>
+                            <span class="print-value"> {{ item.value }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if result.operations %}
+                    <div class="result-section">
+                        <h3>⚙️ Operaciones realizadas</h3>
+                        {% for op in result.operations %}
+                        <div class="op-item">
+                            <span class="op-ins"><code>{{ op.instr }}</code></span>
+                            <span class="op-act {% if 'ERROR' in op.action %}error{% endif %}">
+                                {{ op.action }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Datos CSV/JSON en memoria -->
+                    {% if result.data_summary %}
+                    <div class="result-section">
+                        <h3>📁 Datos en memoria
+                            <span class="csv-count">{{ result.data_summary.records }} registros</span>
+                        </h3>
+                        <p style="margin:0 0 0.4rem; font-size:0.82rem; color:#64748b;">
+                            Archivo: <strong style="color:#1e293b;">{{ result.data_summary.file }}</strong>
+                            &nbsp;|&nbsp; Columnas: {{ result.data_summary.headers|join:", " }}
+                        </p>
+                        {% if result.data_records %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    {% for h in result.data_summary.headers %}
+                                        <th>{{ h }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in result.data_records %}
+                                <tr>
+                                    <td>{{ row.row_number }}</td>
+                                    {% for h in result.data_summary.headers %}
+                                        <td>{{ row.data|get_item:h }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if not result.print_outputs and not result.operations and not result.data_summary %}
+                        <p class="empty-msg">No hubo salidas visibles. Usa PRINT, LOAD o FILTER.</p>
+                    {% endif %}
+
+                {% else %}
+                    <p class="empty-msg">Ejecuta un script para ver resultados aquí.</p>
+                {% endif %}
             </div>
-            {% endfor %}
-          </div>
-          {% endif %}
 
-          <!-- 3. OPERACIONES DE DATOS (LOAD, SAVE, DELETE, etc.) -->
-          {% if result.operations %}
-          <div class="result-section">
-            <h3>&#9881;&#65039; Operaciones de datos</h3>
-            {% for op in result.operations %}
-            <div class="op-item">
-              <span class="op-ins"><code>{{ op.instr }}</code></span>
-              <span class="op-act {% if 'ERROR' in op.action %}error{% endif %}">{{ op.action }}</span>
+            <!-- ERRORES + COMANDOS -->
+            <div class="middle-right">
+
+                <div class="panel">
+                    <h2>🚨 Tabla de errores</h2>
+                    {% if result and result.all_errors %}
+                        <table>
+                            <thead>
+                                <tr><th>L</th><th>Tipo</th><th>Descripción</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for e in result.all_errors %}
+                                <tr>
+                                    <td>{{ e.line }}</td>
+                                    <td>{{ e.type }}</td>
+                                    <td>{{ e.description }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif result %}
+                        <p class="badge-ok">✓ Sin errores</p>
+                    {% else %}
+                        <p class="empty-msg">Sin errores todavía.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel commands">
+                    <h2>📖 Comandos básicos (Forth)</h2>
+                    <ul>
+                        <li><code>archivo.csv LOAD</code> – cargar CSV</li>
+                        <li><code>campo &gt; valor FILTER</code> – filtrar</li>
+                        <li><code>campo = valor MODIFY</code> – modificar</li>
+                        <li><code>campo DELETE</code> – eliminar filas</li>
+                        <li><code>campo EXTRACT</code> – extraer columna</li>
+                        <li><code>COUNT</code> – contar registros</li>
+                        <li><code>SHOW</code> – mostrar datos</li>
+                        <li><code>PRINT</code> – imprimir tope pila</li>
+                        <li><code>archivo.csv SAVE</code> – guardar</li>
+                        <li><code>DUP DROP SWAP</code> – pila</li>
+                        <li><code>AND OR NOT</code> – lógica</li>
+                        <li><code>IF THEN ELSE ENDIF</code> – control</li>
+                    </ul>
+                </div>
             </div>
-            {% endfor %}
-          </div>
-          {% endif %}
 
-          <!-- 4. REGISTROS ENCONTRADOS (FILTER / SHOW / JFILTER) -->
-          {% if result.search_results %}
-          <div class="result-section">
-            <h3>&#128270; Registros encontrados</h3>
-            {% for sr in result.search_results %}
-            <div class="search-result-block">
-              <div class="sr-header">
-                <span class="sr-op">{{ sr.operation }}</span>
-                <span class="sr-summary">{{ sr.summary }}</span>
-              </div>
-              {% if sr.records %}
-              <div class="tbl-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      {% for h in sr.headers %}<th>{{ h }}</th>{% endfor %}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in sr.records %}
-                    <tr>
-                      <td>{{ row.row_number }}</td>
-                      {% for h in sr.headers %}<td>{{ row.data|get_item:h }}</td>{% endfor %}
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-              {% else %}
-              <p class="empty-msg">Sin registros que coincidan con el filtro.</p>
-              {% endif %}
+            <!-- LOG + PILA + BYTECODE -->
+            <div class="bottom">
+
+                <div class="panel">
+                    <h2>🖥️ Log de ejecución VM</h2>
+                    {% if result and result.execution_log %}
+                        <table>
+                            <thead>
+                                <tr><th>PC</th><th>Instrucción</th><th>Acción</th><th>Pila</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for step in result.execution_log|slice:":60" %}
+                                <tr>
+                                    <td>{{ step.pc }}</td>
+                                    <td>{{ step.instr }}</td>
+                                    <td>{{ step.action }}</td>
+                                    <td>{{ step.stack }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif result %}
+                        <p class="empty-msg">No se ejecutó ninguna instrucción.</p>
+                    {% else %}
+                        <p class="empty-msg">Compila para ver el log.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel">
+                    <h2>📚 Pila final</h2>
+                    {% if result and result.stack %}
+                        {% for v in result.stack reversed %}
+                        <div class="stack-item {% if forloop.first %}tope{% endif %}">
+                            <span>{{ v }}</span>
+                            <span class="stack-label">
+                                {% if forloop.first %}← tope{% else %}[{{ forloop.counter0 }}]{% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% elif result %}
+                        <p class="empty-msg">Pila vacía.</p>
+                    {% else %}
+                        <p class="empty-msg">Sin ejecución.</p>
+                    {% endif %}
+                </div>
+
+                <div class="panel">
+                    <h2>⚡ Bytecode optimizado</h2>
+                    {% if result and result.bytecode %}
+                        <ol style="margin:0; padding-left:1.2rem; font-family:monospace; font-size:0.8rem;">
+                            {% for instr in result.bytecode|slice:":60" %}
+                            <li><code style="color:#a78bfa;">{{ instr }}</code></li>
+                            {% endfor %}
+                        </ol>
+                    {% elif result %}
+                        <p class="empty-msg">No se generó bytecode.</p>
+                    {% else %}
+                        <p class="empty-msg">Compila para ver.</p>
+                    {% endif %}
+                </div>
+
             </div>
-            {% endfor %}
-          </div>
-          {% endif %}
-
-          <!-- 5. DATOS EN MEMORIA (estado final) -->
-          {% if result.data_summary %}
-          <div class="result-section">
-            <h3>&#128193; Datos en memoria
-              <span class="csv-count">{{ result.data_summary.records }} registros</span>
-            </h3>
-            <p style="margin:0 0 .4rem;font-size:.82rem;color:#94a3b8;">
-              Archivo: <strong style="color:#e2e8f0;">{{ result.data_summary.file }}</strong>
-              &nbsp;|&nbsp; Columnas: {{ result.data_summary.headers|join:", " }}
-            </p>
-            {% if result.data_records %}
-            <div class="tbl-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    {% for h in result.data_summary.headers %}<th>{{ h }}</th>{% endfor %}
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for row in result.data_records %}
-                  <tr>
-                    <td>{{ row.row_number }}</td>
-                    {% for h in result.data_summary.headers %}<td>{{ row.data|get_item:h }}</td>{% endfor %}
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            {% endif %}
-          </div>
-          {% endif %}
-
-          <!-- Estado vacio -->
-          {% if not result.print_outputs and not result.arithmetic_results and not result.operations and not result.data_summary %}
-          <p class="empty-msg">No hubo salidas visibles. Usa PRINT, operadores aritm&#233;ticos, LOAD o FILTER.</p>
-          {% endif %}
-
-        {% else %}
-          <p class="empty-msg">Ejecuta un script para ver resultados aqu&#237;.</p>
-        {% endif %}
-      </div>
-
-      <!-- ERRORES + COMANDOS -->
-      <div class="middle-right">
-
-        <div class="panel">
-          <h2>&#128680; Tabla de errores</h2>
-          {% if result and result.all_errors %}
-            <table>
-              <thead><tr><th>L</th><th>Tipo</th><th>Descripci&#243;n</th></tr></thead>
-              <tbody>
-                {% for e in result.all_errors %}
-                <tr><td>{{ e.line }}</td><td>{{ e.type }}</td><td>{{ e.description }}</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          {% elif result %}
-            <p class="badge-ok">&#10003; Sin errores</p>
-          {% else %}
-            <p class="empty-msg">Sin errores todav&#237;a.</p>
-          {% endif %}
         </div>
+    </form>
 
-        <div class="panel commands">
-          <h2>&#128214; Comandos b&#225;sicos (Forth)</h2>
-          <ul>
-            <li><code>archivo.csv LOAD</code> &ndash; cargar CSV</li>
-            <li><code>campo &gt; valor FILTER</code> &ndash; filtrar</li>
-            <li><code>campo = valor MODIFY</code> &ndash; modificar</li>
-            <li><code>campo DELETE</code> &ndash; eliminar filas</li>
-            <li><code>campo EXTRACT</code> &ndash; extraer columna</li>
-            <li><code>COUNT</code> &ndash; contar registros</li>
-            <li><code>SHOW</code> &ndash; mostrar datos</li>
-            <li><code>5 3 +</code> &ndash; aritm&#233;tica</li>
-            <li><code>PRINT</code> &ndash; imprimir tope pila</li>
-            <li><code>archivo.csv SAVE</code> &ndash; guardar</li>
-            <li><code>DUP DROP SWAP</code> &ndash; pila</li>
-            <li><code>AND OR NOT</code> &ndash; l&#243;gica</li>
-            <li><code>IF THEN ELSE ENDIF</code> &ndash; control</li>
-          </ul>
-        </div>
-      </div>
+    <script>
+    (function () {
+        const dataEl = document.getElementById("sem-tree-data");
+        if (!dataEl) return;
+        let tree;
+        try { tree = JSON.parse(dataEl.textContent); }
+        catch (e) { return; }
+        const container = document.getElementById("sem-tree");
+        if (!container) return;
+        const COLORS = {
+            "ROOT":      "#38bdf8",
+            "NÚMERO":    "#fbbf24",
+            "CADENA":    "#a78bfa",
+            "OP-BINARIO":"#34d399",
+            "OP-LÓGICO": "#f472b6",
+            "OP-PILA":   "#fb923c",
+            "OP-DATOS":  "#60a5fa",
+            "CONTROL":   "#e879f9",
+            "SALIDA":    "#4ade80",
+            "VACÍO":     "#ef4444",
+        };
+        const ICONS = {
+            "ROOT":"◆","NÚMERO":"🔢","CADENA":"📝","OP-BINARIO":"⚡",
+            "OP-LÓGICO":"🔗","OP-PILA":"📦","OP-DATOS":"🗃️",
+            "CONTROL":"🔀","SALIDA":"🖨️","VACÍO":"❓"
+        };
+        function renderNode(node, prefix, isLast) {
+            const color    = COLORS[node.type] || "#e2e8f0";
+            const icon     = ICONS[node.type]  || "•";
+            const connector= isLast ? "└─ " : "├─ ";
+            const dtype    = node.dtype
+                ? `<span style="color:#475569;"> [${node.dtype}]</span>`
+                : "";
+            const label    = `<span style="color:${color}; font-weight:600;">${icon} ${node.label}</span>${dtype}`;
 
-      <!-- LOG + PILA + BYTECODE -->
-      <div class="bottom">
+            let html = `<div>${prefix}${connector}${label}</div>`;
 
-        <div class="panel">
-          <h2>&#128421;&#65039; Log de ejecuci&#243;n VM</h2>
-          {% if result and result.execution_log %}
-            <table>
-              <thead><tr><th>PC</th><th>Instrucci&#243;n</th><th>Acci&#243;n</th><th>Pila</th></tr></thead>
-              <tbody>
-                {% for step in result.execution_log|slice:":80" %}
-                <tr>
-                  <td>{{ step.pc }}</td><td>{{ step.instr }}</td>
-                  <td>{{ step.action }}</td><td>{{ step.stack }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          {% elif result %}
-            <p class="empty-msg">No se ejecut&#243; ninguna instrucci&#243;n.</p>
-          {% else %}
-            <p class="empty-msg">Compila para ver el log.</p>
-          {% endif %}
-        </div>
-
-        <div class="panel">
-          <h2>&#128218; Pila final</h2>
-          {% if result and result.stack %}
-            {% for v in result.stack reversed %}
-            <div class="stack-item {% if forloop.first %}tope{% endif %}">
-              <span>{{ v }}</span>
-              <span class="stack-label">{% if forloop.first %}&larr; tope{% else %}[{{ forloop.counter0 }}]{% endif %}</span>
-            </div>
-            {% endfor %}
-          {% elif result %}
-            <p class="empty-msg">Pila vac&#237;a.</p>
-          {% else %}
-            <p class="empty-msg">Sin ejecuci&#243;n.</p>
-          {% endif %}
-        </div>
-
-        <div class="panel">
-          <h2>&#9889; Bytecode optimizado</h2>
-          {% if result and result.bytecode %}
-            <ol style="margin:0;padding-left:1.2rem;font-family:monospace;font-size:.8rem;">
-              {% for instr in result.bytecode|slice:":80" %}
-              <li><code style="color:#a78bfa;">{{ instr }}</code></li>
-              {% endfor %}
-            </ol>
-          {% elif result %}
-            <p class="empty-msg">No se gener&#243; bytecode.</p>
-          {% else %}
-            <p class="empty-msg">Compila para ver.</p>
-          {% endif %}
-        </div>
-
-      </div><!-- /bottom -->
-    </div><!-- /grid -->
-  </form>
-
-  <script>
-  (function () {
-    const dataEl = document.getElementById("sem-tree-data");
-    if (!dataEl) return;
-    let tree;
-    try { tree = JSON.parse(dataEl.textContent); } catch (e) { return; }
-    const container = document.getElementById("sem-tree");
-    if (!container) return;
-    const COLORS = {
-      "ROOT":"#38bdf8","NUMERO":"#fbbf24","CADENA":"#a78bfa",
-      "OP-BINARIO":"#34d399","OP-LOGICO":"#f472b6","OP-PILA":"#fb923c",
-      "OP-DATOS":"#60a5fa","OP-JSON":"#4ade80","CONTROL":"#e879f9",
-      "SALIDA":"#4ade80","VACIO":"#ef4444"
-    };
-    const ICONS = {
-      "ROOT":"◆","NUMERO":"🔢","CADENA":"📝","OP-BINARIO":"⚡",
-      "OP-LOGICO":"🔗","OP-PILA":"📦","OP-DATOS":"🗃","OP-JSON":"🔷",
-      "CONTROL":"🔀","SALIDA":"🖨","VACIO":"❓"
-    };
-    function renderNode(node, prefix, isLast) {
-      const color = COLORS[node.type] || "#e2e8f0";
-      const icon  = ICONS[node.type]  || "•";
-      const conn  = isLast ? "└─ " : "├─ ";
-      const dtype = node.dtype ? `<span style="color:#475569;"> [${node.dtype}]</span>` : "";
-      const label = `<span style="color:${color};font-weight:600;">${icon} ${node.label}</span>${dtype}`;
-      let html = `<div>${prefix}${conn}${label}</div>`;
-      if (node.children && node.children.length) {
-        const cp = prefix + (isLast ? "   " : "│  ");
-        node.children.forEach((c, i) => { html += renderNode(c, cp, i === node.children.length - 1); });
-      }
-      return html;
-    }
-    let html = `<div><span style="color:#38bdf8;font-weight:700;">◆ ${tree.label}</span></div>`;
-    if (tree.children) {
-      tree.children.forEach((c, i) => { html += renderNode(c, "", i === tree.children.length - 1); });
-    }
-    container.innerHTML = html;
-  })();
-  </script>
+            if (node.children && node.children.length) {
+                const cp = prefix + (isLast ? "   " : "│  ");
+                node.children.forEach((c, i) => { html += renderNode(c, cp, i === node.children.length - 1); });
+            }
+            return html;
+        }
+        const rootColor = COLORS["ROOT"];
+        let html = `<div><span style="color:${rootColor}; font-weight:700;">◆ ${tree.label}</span></div>`;
+        if (tree.children) {
+            tree.children.forEach((c, i) => { html += renderNode(c, "", i === tree.children.length - 1); });
+        }
+        container.innerHTML = html;
+    })();
+    </script>
 </body>
 </html>
