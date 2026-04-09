@@ -18,7 +18,7 @@ def run_in_memory(code: str) -> dict:
         "print_outputs": [],
         "operations": [],
         "search_results": [],
-        "arithmetic_results": [],   # resultados de ops aritmeticas/logicas
+        "arithmetic_results": [],
         "all_errors": [],
     }
 
@@ -28,17 +28,32 @@ def run_in_memory(code: str) -> dict:
         {"type": t.type, "value": t.value, "line": t.line, "column": t.column}
         for t in tokens
     ]
-    result["lexical_errors"] = [e for e in compiler.errors if e.type == "LEXICO"]
+    # El compilador registra errores léxicos con type == "LÉXICO" (con tilde)
+    result["lexical_errors"] = [
+        e for e in compiler.errors
+        if e.type.upper().replace("É", "E").replace("Ó", "O") in ("LEXICO", "LÉXICO")
+        or "LEXICO" in e.type.upper()
+        or "LÉXICO" in e.type.upper()
+    ]
 
     # FASE 2: SINTACTICO
     ok_syntax = compiler.syntactic_analysis(tokens)
     result["syntax_ok"] = ok_syntax
-    result["syntax_errors"] = [e for e in compiler.errors if e.type == "SINTACTICO"]
+    # El compilador registra errores sintácticos con type == "SINTÁCTICO" (con tilde)
+    result["syntax_errors"] = [
+        {"line": e.line, "type": e.type, "description": e.description}
+        for e in compiler.errors
+        if "SINT" in e.type.upper()
+    ]
 
     # FASE 3: SEMANTICO
     ok_semantic = compiler.semantic_analysis(tokens)
     result["semantic_ok"] = ok_semantic
-    result["semantic_errors"] = [e for e in compiler.errors if e.type == "SEMANTICO"]
+    result["semantic_errors"] = [
+        {"line": e.line, "type": e.type, "description": e.description}
+        for e in compiler.errors
+        if "SEM" in e.type.upper()
+    ]
     result["semantic_tree"] = compiler.build_semantic_tree(tokens)
 
     # FASE 4-5: BYTECODE + OPTIMIZACION
@@ -65,16 +80,13 @@ def run_in_memory(code: str) -> dict:
         instr_upper = step["instr"].upper().strip()
         action      = step["action"]
 
-        # PRINT
         if any(instr_upper.startswith(k) for k in PRINT_OPS):
             value = action.replace("PRINT", "").strip()
             result["print_outputs"].append({"pc": step["pc"], "value": value})
 
-        # Operaciones de datos (LOAD, SAVE, DELETE, etc.)
         elif any(instr_upper.startswith(k) for k in DATA_OPS):
             result["operations"].append({"instr": step["instr"], "action": action})
 
-        # Busqueda/filtrado -> snapshot de registros
         elif any(instr_upper.startswith(k) for k in SEARCH_OPS):
             result["operations"].append({"instr": step["instr"], "action": action})
             if not seen_search:
@@ -89,7 +101,6 @@ def run_in_memory(code: str) -> dict:
                     ],
                 })
 
-        # Operaciones aritmeticas / logicas / pila
         elif any(instr_upper.startswith(k) for k in ARITH_OPS):
             if "ERROR" not in action:
                 result["arithmetic_results"].append({
@@ -112,6 +123,9 @@ def run_in_memory(code: str) -> dict:
         ]
 
     # ── TODOS LOS ERRORES ────────────────────────────────────────
-    result["all_errors"] = compiler.get_errors()
+    result["all_errors"] = [
+        {"line": e.line, "type": e.type, "description": e.description}
+        for e in compiler.get_errors()
+    ]
 
     return result
