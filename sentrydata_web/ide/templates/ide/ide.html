@@ -82,6 +82,40 @@
             letter-spacing: 0.05em;
         }
 
+        /* ERRORES SINTÁCTICOS */
+        .syntax-error-list {
+            list-style: none;
+            margin: 0.3rem 0 0 0;
+            padding: 0;
+        }
+        .syntax-error-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+            border-left: 3px solid #dc2626;
+            border-radius: 0 4px 4px 0;
+            padding: 5px 8px;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+        .syntax-error-line {
+            background: #dc2626;
+            color: white;
+            border-radius: 3px;
+            padding: 1px 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+            align-self: center;
+        }
+        .syntax-error-desc {
+            color: #991b1b;
+            flex: 1;
+        }
+
         /* PRINT */
         .print-output {
             background: #eff6ff;
@@ -224,12 +258,19 @@
                         {% if result.syntax_ok %}
                             <p class="badge-ok">✓ Estructura sintáctica válida</p>
                         {% else %}
-                            <p class="badge-error">✗ Errores sintácticos:</p>
-                            <ul>
-                                {% for e in result.syntax_errors %}
-                                    <li>L{{ e.line }} – {{ e.description }}</li>
-                                {% endfor %}
-                            </ul>
+                            <p class="badge-error">✗ Se encontraron {{ result.syntax_errors|length }} error{{ result.syntax_errors|length|pluralize:"es" }} sintáctico{{ result.syntax_errors|length|pluralize:"s" }}:</p>
+                            {% if result.syntax_errors %}
+                                <ul class="syntax-error-list">
+                                    {% for e in result.syntax_errors %}
+                                    <li class="syntax-error-item">
+                                        <span class="syntax-error-line">L{{ e.line }}</span>
+                                        <span class="syntax-error-desc">{{ e.description }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="empty-msg" style="margin-top:0.3rem;">No se pudo obtener el detalle de los errores.</p>
+                            {% endif %}
                         {% endif %}
                     {% else %}
                         <p class="empty-msg">Ejecuta el compilador.</p>
@@ -243,12 +284,17 @@
                         {% if result.semantic_ok %}
                             <p class="badge-ok">✓ Análisis semántico correcto</p>
                         {% else %}
-                            <p class="badge-error">✗ Errores semánticos:</p>
-                            <ul>
-                                {% for e in result.semantic_errors %}
-                                    <li>L{{ e.line }} – {{ e.description }}</li>
-                                {% endfor %}
-                            </ul>
+                            <p class="badge-error">✗ Se encontraron {{ result.semantic_errors|length }} error{{ result.semantic_errors|length|pluralize:"es" }} semántico{{ result.semantic_errors|length|pluralize:"s" }}:</p>
+                            {% if result.semantic_errors %}
+                                <ul class="syntax-error-list">
+                                    {% for e in result.semantic_errors %}
+                                    <li class="syntax-error-item" style="border-left-color:#7c3aed; background:#faf5ff; border-color:#e9d5ff;">
+                                        <span class="syntax-error-line" style="background:#7c3aed;">L{{ e.line }}</span>
+                                        <span class="syntax-error-desc" style="color:#5b21b6;">{{ e.description }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
                         {% endif %}
 
                         {% if result.semantic_tree %}
@@ -485,6 +531,7 @@
             "OP-LÓGICO": "#f472b6",
             "OP-PILA":   "#fb923c",
             "OP-DATOS":  "#60a5fa",
+            "OP-JSON":   "#4ade80",
             "CONTROL":   "#e879f9",
             "SALIDA":    "#4ade80",
             "VACÍO":     "#ef4444",
@@ -492,7 +539,7 @@
         const ICONS = {
             "ROOT":"◆","NÚMERO":"🔢","CADENA":"📝","OP-BINARIO":"⚡",
             "OP-LÓGICO":"🔗","OP-PILA":"📦","OP-DATOS":"🗃️",
-            "CONTROL":"🔀","SALIDA":"🖨️","VACÍO":"❓"
+            "OP-JSON":"🔷","CONTROL":"🔀","SALIDA":"🖨️","VACÍO":"❓"
         };
         function renderNode(node, prefix, isLast) {
             const color    = COLORS[node.type] || "#e2e8f0";
